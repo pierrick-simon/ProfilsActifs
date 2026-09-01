@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres:18.6
+    container_name: survivor-postgres
+    env_file:
+      - .env.example
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${PWD}/db-data/:/var/lib/postgresql/
+      - ${PWD}/db/init.sql:/docker-entrypoint-initdb.d/init.sql

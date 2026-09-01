@@ -9,7 +9,12 @@ On Linux:
 sudo apt install npm # Debian
 ```
 
-### 2. Run the server
+### 2. Start the database
 ```shell
-npm run dev
+docker compose up
+```
+
+### 3. Run the server
+```shell
+cd profils-actifs && npm run dev
 ```
