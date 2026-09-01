@@ -16,5 +16,7 @@ docker compose up
 
 ### 3. Run the server
 ```shell
-cd profils-actifs && npm run dev
+cd profils-actifs
+npm install
+npm run dev
 ```
