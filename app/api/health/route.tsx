@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import pool from "../../../lib/db";
+import { prisma } from "@/lib/db";
 
 export async function GET( ) {
     try {
-        const client = await pool.connect();
-        await client.query("SELECT 1");
-        client.release();
+        await prisma.$executeRaw`SELECT 1`;
 
         return NextResponse.json(
         {
