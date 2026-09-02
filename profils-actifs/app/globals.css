@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+@theme {
+  /* Typographie : Inter pour l'interface, Spectral pour le corps de texte */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-spectral), ui-serif, Georgia, serif;
+
+  /* Fonds */
+  --color-fond-page: #ffffff;
+  --color-fond-neutre: #edeff3;
+  --color-fond-bleu-clair: #d5e2ff;
+
+  /* Marque et actions */
+  --color-bleu-institutionnel: #1b3a6b;
+  --color-action-sur-blanc: #b75310;
+  --color-action-sur-bleu: #ffd9c0;
+
+  /* Textes */
+  --color-texte-principal: #14213d;
+  --color-texte-secondaire: #4a5468;
+  --color-texte-tertiaire: #667085;
+  --color-texte-inverse: #ffffff;
+  --color-texte-sur-action-clair: #96440d;
+
+  /* Bordures */
+  --color-bordure-defaut: #e3e6ec;
+  --color-bordure-forte: #8891a3;
+}
