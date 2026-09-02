@@ -9,3 +9,11 @@ services:
     volumes:
       - ${PWD}/db/data/:/var/lib/postgresql/
       - ${PWD}/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+  nextjs:
+    build:
+      context: profils-actifs
+    container_name: survivor-nextjs
+    env_file:
+      - .env.example
+    ports:
+      - "3000:3000"
