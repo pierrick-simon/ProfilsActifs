@@ -3,9 +3,17 @@ services:
     image: postgres:18.6
     container_name: survivor-postgres
     env_file:
-      - .env.example
+      - .env
     ports:
       - "5432:5432"
     volumes:
       - ${PWD}/db/data/:/var/lib/postgresql/
       - ${PWD}/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+  nextjs:
+    build:
+      context: profils-actifs
+    container_name: survivor-nextjs
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
