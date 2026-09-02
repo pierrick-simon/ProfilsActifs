@@ -7,7 +7,7 @@
 
 ### 2. Environment file creation
 
-Copy `.env.example` and modify the values accordingly.
+Copy `.env.example` to a file named `.env` and modify the values accordingly.
 
 ### 3. Simply run:
 ```shell
@@ -26,7 +26,7 @@ If you want to change the port, in `profils-actif/Dockerfile`, on lines 78 and 1
 
 ### 2. Environment file creation
 
-Copy `.env.example` and modify the values accordingly.
+Copy `.env.example` to a file named `.env` and modify the values accordingly.
 
 ### 3. Start the database
 ```shell
