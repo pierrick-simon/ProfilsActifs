@@ -1,12 +1,15 @@
 # Survivor - ProfilsActifs
 
-
 ## How to un locally in production environment
 
-Requirements:
+### 1. Requirements:
 - Docker
 
-Simply run:
+### 2. Environment file creation
+
+Copy `.env.example` and modify the values accordingly.
+
+### 3. Simply run:
 ```shell
 docker compose up
 ```
@@ -17,16 +20,20 @@ If you want to change the port, in `profils-actif/Dockerfile`, on lines 78 and 1
 
 ## How to un locally in development environment
 
-Requirements:
+### 1. Requirements:
 - Docker
 - npm
 
-### 1. Start the database
+### 2. Environment file creation
+
+Copy `.env.example` and modify the values accordingly.
+
+### 3. Start the database
 ```shell
 docker compose up postgres
 ```
 
-### 2. Run the server
+### 4. Run the server
 In the `profils-actifs` directory:
 ```shell
 npm install
