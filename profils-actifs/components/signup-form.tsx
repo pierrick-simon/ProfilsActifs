@@ -61,6 +61,11 @@ export default function SignupForm() {
           className="flex flex-col gap-3"
           onSubmit={(event) => {
             event.preventDefault();
+            // Mémorise le rôle choisi (pas de back-end pour l'instant) afin
+            // d'adapter l'interface, par exemple les contrôles du fil vidéo.
+            localStorage.setItem("role", role);
+            // Seuls les candidats répondent au questionnaire ; les recruteurs
+            // accèdent directement à la plateforme après l'inscription.
             router.push(role === "candidat" ? "/inscription/questions" : "/");
           }}
         >
