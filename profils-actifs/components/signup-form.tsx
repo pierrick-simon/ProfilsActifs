@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  BriefcaseIcon,
+  CalendarIcon,
   CheckIcon,
   ChevronDownIcon,
   EyeIcon,
@@ -11,6 +13,7 @@ import {
   GlobeIcon,
   LockIcon,
   MailIcon,
+  MapPinIcon,
   UserIcon,
 } from "@/components/icons";
 import AuthUserBadge from "@/components/auth-user-badge";
@@ -20,9 +23,10 @@ export default function SignupForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [role, setRole] = useState<"candidat" | "recruteur">("candidat");
 
   return (
-    <div className="flex h-full flex-col justify-between gap-8 p-8">
+    <div className="flex h-full flex-col justify-between gap-6 overflow-y-auto p-8">
       <header className="flex items-center justify-between gap-3">
         <span className="flex size-8 items-center justify-center rounded-lg bg-bleu-institutionnel font-sans text-xs font-medium text-texte-inverse">
           PA
@@ -57,9 +61,43 @@ export default function SignupForm() {
           className="flex flex-col gap-3"
           onSubmit={(event) => {
             event.preventDefault();
-            router.push("/inscription/questions");
+            router.push(role === "candidat" ? "/inscription/questions" : "/");
           }}
         >
+          <div className="flex flex-col gap-1">
+            <span className="font-sans text-sm font-medium text-texte-principal">
+              Je m&apos;inscris en tant que <span className="text-bleu-institutionnel">*</span>
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                aria-pressed={role === "candidat"}
+                onClick={() => setRole("candidat")}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 font-sans text-sm font-medium transition-colors ${
+                  role === "candidat"
+                    ? "border-bleu-institutionnel bg-fond-bleu-clair text-bleu-institutionnel"
+                    : "border-bordure-defaut bg-fond-page text-texte-secondaire hover:bg-fond-neutre"
+                }`}
+              >
+                <UserIcon className="size-4" />
+                Candidat
+              </button>
+              <button
+                type="button"
+                aria-pressed={role === "recruteur"}
+                onClick={() => setRole("recruteur")}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 font-sans text-sm font-medium transition-colors ${
+                  role === "recruteur"
+                    ? "border-bleu-institutionnel bg-fond-bleu-clair text-bleu-institutionnel"
+                    : "border-bordure-defaut bg-fond-page text-texte-secondaire hover:bg-fond-neutre"
+                }`}
+              >
+                <BriefcaseIcon className="size-4" />
+                Recruteur
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1">
             <label htmlFor="nom" className="font-sans text-sm font-medium text-texte-principal">
               Nom complet <span className="text-bleu-institutionnel">*</span>
@@ -72,6 +110,21 @@ export default function SignupForm() {
                 placeholder="Prénom et nom"
                 autoComplete="name"
                 className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="naissance" className="font-sans text-sm font-medium text-texte-principal">
+              Date de naissance <span className="text-bleu-institutionnel">*</span>
+            </label>
+            <div className="flex items-center gap-2 rounded-lg border border-bordure-defaut bg-fond-page px-3 py-2.5 shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] focus-within:border-bleu-institutionnel focus-within:ring-2 focus-within:ring-fond-bleu-clair">
+              <CalendarIcon className="size-5 shrink-0 text-texte-tertiaire" />
+              <input
+                id="naissance"
+                type="date"
+                autoComplete="bday"
+                className="flex-1 bg-transparent font-sans text-sm text-texte-principal focus:outline-none [color-scheme:light]"
               />
             </div>
           </div>
@@ -91,6 +144,24 @@ export default function SignupForm() {
               />
             </div>
           </div>
+
+          {role === "candidat" && (
+            <div className="flex flex-col gap-1">
+              <label htmlFor="adresse" className="font-sans text-sm font-medium text-texte-principal">
+                Adresse <span className="text-bleu-institutionnel">*</span>
+              </label>
+              <div className="flex items-center gap-2 rounded-lg border border-bordure-defaut bg-fond-page px-3 py-2.5 shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] focus-within:border-bleu-institutionnel focus-within:ring-2 focus-within:ring-fond-bleu-clair">
+                <MapPinIcon className="size-5 shrink-0 text-texte-tertiaire" />
+                <input
+                  id="adresse"
+                  type="text"
+                  placeholder="Numéro, rue, code postal, ville"
+                  autoComplete="street-address"
+                  className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1">
             <label htmlFor="password" className="font-sans text-sm font-medium text-texte-principal">

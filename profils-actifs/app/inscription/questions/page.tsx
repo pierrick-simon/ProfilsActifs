@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   BriefcaseIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   CloseIcon,
-  GlobeIcon,
   InfoIcon,
   UserIcon,
 } from "@/components/icons";
@@ -55,19 +53,25 @@ const questions: Question[] = [
   {
     type: "choice",
     title: "Question #2",
-    description: "Choisissez votre rôle au sein de ProfilsActifs.",
+    description: "Quel est votre niveau d'expérience ?",
     Icon: BriefcaseIcon,
     choices: [
       {
-        value: "candidat",
-        title: "Je suis un candidat",
-        description: "Rejoignez la plateforme en tant que candidat.",
+        value: "debutant",
+        title: "Débutant",
+        description: "Moins de 2 ans d'expérience.",
         Icon: UserIcon,
       },
       {
-        value: "recruteur",
-        title: "Je suis un recruteur",
-        description: "Rejoignez la plateforme en tant que recruteur.",
+        value: "confirme",
+        title: "Confirmé",
+        description: "Entre 3 et 7 ans d'expérience.",
+        Icon: BriefcaseIcon,
+      },
+      {
+        value: "expert",
+        title: "Expert",
+        description: "Plus de 8 ans d'expérience.",
         Icon: BriefcaseIcon,
       },
     ],
@@ -217,16 +221,8 @@ export default function QuestionsPage() {
         </div>
       </div>
 
-      <footer className="flex items-center gap-3 px-11 py-6">
-        <span className="flex-1 font-sans text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
-        <button
-          type="button"
-          className="flex items-center gap-1 font-sans text-sm text-texte-secondaire transition-colors hover:text-texte-principal"
-        >
-          <GlobeIcon className="size-4" />
-          FR
-          <ChevronDownIcon className="size-4" />
-        </button>
+      <footer className="flex items-center px-11 py-6">
+        <span className="font-sans text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
       </footer>
     </main>
   );
