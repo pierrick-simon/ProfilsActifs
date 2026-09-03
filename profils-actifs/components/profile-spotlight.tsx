@@ -1,7 +1,17 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import SegmentedControl from "@/components/segmented-control";
 
 export default function ProfileSpotlight() {
+  const [isRecruteur, setIsRecruteur] = useState(false);
+
+  useEffect(() => {
+    setIsRecruteur(localStorage.getItem("role") === "recruteur");
+  }, []);
+
   return (
     <section className="flex w-full flex-col items-center gap-4 rounded-xl border border-bordure-defaut bg-fond-page p-6">
       <SegmentedControl
@@ -21,6 +31,17 @@ export default function ProfileSpotlight() {
       <p className="font-sans text-sm text-texte-secondaire">
         Profil certifié mis en avant ce mois-ci.
       </p>
+
+      {isRecruteur && (
+        <Link
+          href="/messages"
+          className="flex w-full items-center justify-center gap-1 overflow-hidden rounded-lg bg-fond-page p-2 shadow-[0px_1px_2px_0px_rgba(10,13,20,0.03)] outline outline-1 -outline-offset-1 outline-bordure-defaut transition-colors hover:bg-fond-neutre"
+        >
+          <span className="px-1 font-sans text-sm font-medium leading-5 text-texte-secondaire">
+            Contact
+          </span>
+        </Link>
+      )}
     </section>
   );
 }
