@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
   HeartIcon,
 } from "@/components/icons";
+import { useRole } from "@/hooks/use-role";
 
 const videoColors = [
   "bg-bleu-institutionnel",
@@ -16,12 +17,8 @@ const videoColors = [
 ];
 
 export default function VideoFeed() {
-  const [isRecruteur, setIsRecruteur] = useState(false);
+  const isRecruteur = useRole() === "recruteur";
   const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    setIsRecruteur(localStorage.getItem("role") === "recruteur");
-  }, []);
 
   const goPrev = () =>
     setIndex((current) => (current - 1 + videoColors.length) % videoColors.length);

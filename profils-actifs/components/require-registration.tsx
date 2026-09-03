@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useRole } from "@/hooks/use-role";
 
 export default function RequireRegistration({
   children,
@@ -9,17 +10,15 @@ export default function RequireRegistration({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [allowed, setAllowed] = useState(false);
+  const role = useRole();
 
   useEffect(() => {
-    if (localStorage.getItem("role")) {
-      setAllowed(true);
-    } else {
+    if (!role) {
       router.replace("/inscription");
     }
-  }, [router]);
+  }, [role, router]);
 
-  if (!allowed) {
+  if (!role) {
     return null;
   }
 

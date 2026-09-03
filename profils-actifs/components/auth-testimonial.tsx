@@ -11,7 +11,7 @@ export default function AuthTestimonial() {
 
         <div className="flex flex-col gap-7">
           <p className="font-sans text-2xl font-medium leading-snug text-texte-inverse">
-            « ProfilsActifs aide les demandeurs d'emploi à se présenter en vidéo et à être repérés par des recruteurs. »
+            « ProfilsActifs aide les demandeurs d&apos;emploi à se présenter en vidéo et à être repérés par des recruteurs. »
           </p>
           <div className="flex flex-col gap-1">
             <p className="font-sans text-base font-medium text-texte-inverse">Wei Chen</p>

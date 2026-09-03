@@ -1,16 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SegmentedControl from "@/components/segmented-control";
+import { useRole } from "@/hooks/use-role";
 
 export default function ProfileSpotlight() {
-  const [isRecruteur, setIsRecruteur] = useState(false);
-
-  useEffect(() => {
-    setIsRecruteur(localStorage.getItem("role") === "recruteur");
-  }, []);
+  const isRecruteur = useRole() === "recruteur";
 
   return (
     <section className="flex w-full flex-col items-center gap-4 rounded-xl border border-bordure-defaut bg-fond-page p-6">
