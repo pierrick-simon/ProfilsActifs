@@ -135,6 +135,22 @@ export function ChevronDownIcon({ className }: IconProps) {
   );
 }
 
+export function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="m15 18-6-6 6-6" />
+    </LineIcon>
+  );
+}
+
+export function ChevronRightIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="m9 18 6-6-6-6" />
+    </LineIcon>
+  );
+}
+
 export function InfoIcon({ className }: IconProps) {
   return (
     <LineIcon className={className}>

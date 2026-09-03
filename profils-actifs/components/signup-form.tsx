@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -16,6 +17,7 @@ import AuthUserBadge from "@/components/auth-user-badge";
 
 
 export default function SignupForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
@@ -26,7 +28,7 @@ export default function SignupForm() {
           PA
         </span>
         <div className="flex items-center gap-2">
-          <span className="font-serif text-sm text-texte-secondaire">
+          <span className="font-sans text-sm text-texte-secondaire">
             Vous avez déjà un compte ?
           </span>
           <Link
@@ -45,13 +47,19 @@ export default function SignupForm() {
             <h1 className="font-sans text-2xl font-medium text-texte-principal">
               Créer votre compte
             </h1>
-            <p className="font-serif text-base text-texte-secondaire">
+            <p className="font-sans text-base text-texte-secondaire">
               Renseignez vos informations pour commencer.
             </p>
           </div>
         </div>
 
-        <form className="flex flex-col gap-3">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            router.push("/inscription/questions");
+          }}
+        >
           <div className="flex flex-col gap-1">
             <label htmlFor="nom" className="font-sans text-sm font-medium text-texte-principal">
               Nom complet <span className="text-bleu-institutionnel">*</span>
@@ -122,7 +130,7 @@ export default function SignupForm() {
             >
               {acceptTerms && <CheckIcon className="size-3.5" />}
             </button>
-            <span className="font-serif text-sm text-texte-principal">
+            <span className="font-sans text-sm text-texte-principal">
               J&apos;accepte les conditions d&apos;utilisation et la politique de confidentialité.
             </span>
           </label>
@@ -139,10 +147,10 @@ export default function SignupForm() {
       </div>
 
       <footer className="flex items-center justify-between">
-        <span className="font-serif text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
+        <span className="font-sans text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
         <button
           type="button"
-          className="flex items-center gap-1 font-serif text-sm text-texte-secondaire transition-colors hover:text-texte-principal"
+          className="flex items-center gap-1 font-sans text-sm text-texte-secondaire transition-colors hover:text-texte-principal"
         >
           <GlobeIcon className="size-4" />
           FR

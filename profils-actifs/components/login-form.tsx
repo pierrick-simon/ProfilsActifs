@@ -24,7 +24,7 @@ export default function LoginForm() {
           PA
         </span>
         <div className="flex items-center gap-2">
-          <span className="font-serif text-sm text-texte-secondaire">
+          <span className="font-sans text-sm text-texte-secondaire">
             Vous n&apos;avez pas de compte ?
           </span>
           <Link
@@ -43,7 +43,7 @@ export default function LoginForm() {
             <h1 className="font-sans text-2xl font-medium text-texte-principal">
               Connexion à votre compte
             </h1>
-            <p className="font-serif text-base text-texte-secondaire">
+            <p className="font-sans text-base text-texte-secondaire">
               Saisissez vos identifiants pour vous connecter.
             </p>
           </div>
@@ -105,7 +105,7 @@ export default function LoginForm() {
               >
                 {keepLoggedIn && <CheckIcon className="size-3.5" />}
               </button>
-              <span className="font-serif text-sm text-texte-principal">Rester connecté</span>
+              <span className="font-sans text-sm text-texte-principal">Rester connecté</span>
             </label>
             <button
               type="button"
@@ -127,10 +127,10 @@ export default function LoginForm() {
       </div>
 
       <footer className="flex items-center justify-between">
-        <span className="font-serif text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
+        <span className="font-sans text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
         <button
           type="button"
-          className="flex items-center gap-1 font-serif text-sm text-texte-secondaire transition-colors hover:text-texte-principal"
+          className="flex items-center gap-1 font-sans text-sm text-texte-secondaire transition-colors hover:text-texte-principal"
         >
           <GlobeIcon className="size-4" />
           FR

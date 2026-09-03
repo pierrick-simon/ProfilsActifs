@@ -11,14 +11,14 @@ export default function ProfileSpotlight() {
 
       <div className="flex flex-col items-center gap-1 text-center">
         <p className="font-sans text-lg font-medium text-texte-principal">Amina K.</p>
-        <p className="font-serif text-sm text-texte-secondaire">
+        <p className="font-sans text-sm text-texte-secondaire">
           Développeuse back-end · Lyon
         </p>
       </div>
 
       <CertificationMedal />
 
-      <p className="font-serif text-sm text-texte-secondaire">
+      <p className="font-sans text-sm text-texte-secondaire">
         Profil certifié mis en avant ce mois-ci.
       </p>
     </section>
