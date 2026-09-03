@@ -11,7 +11,7 @@ services:
       - ${PWD}/db/init.sql:/docker-entrypoint-initdb.d/init.sql
   nextjs:
     build:
-      context: profils-actifs
+      context: .
     container_name: survivor-nextjs
     env_file:
       - .env

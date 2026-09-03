@@ -1,9 +1,13 @@
 @import "tailwindcss";
 
+@source "../app";
+@source "../components";
+@source "../hooks";
+@source "../lib";
+
 @theme {
-  /* Typographie : Inter pour l'interface, Spectral pour le corps de texte */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-spectral), ui-serif, Georgia, serif;
+  /* Typographie : Marianne, police officielle imposée par la charte */
+  --font-sans: var(--font-marianne), ui-sans-serif, system-ui, sans-serif;
 
   /* Fonds */
   --color-fond-page: #ffffff;
@@ -13,7 +17,7 @@
   /* Marque et actions */
   --color-bleu-institutionnel: #1b3a6b;
   --color-action-sur-blanc: #b75310;
-  --color-action-sur-bleu: #ffd9c0;
+  --color-action-sur-bleu: #FFC197;
 
   /* Textes */
   --color-texte-principal: #14213d;

@@ -1,7 +1,13 @@
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
 import SegmentedControl from "@/components/segmented-control";
+import { useRole } from "@/hooks/use-role";
 
 export default function ProfileSpotlight() {
+  const isRecruteur = useRole() === "recruteur";
+
   return (
     <section className="flex w-full flex-col items-center gap-4 rounded-xl border border-bordure-defaut bg-fond-page p-6">
       <SegmentedControl
@@ -11,16 +17,27 @@ export default function ProfileSpotlight() {
 
       <div className="flex flex-col items-center gap-1 text-center">
         <p className="font-sans text-lg font-medium text-texte-principal">Amina K.</p>
-        <p className="font-serif text-sm text-texte-secondaire">
+        <p className="font-sans text-sm text-texte-secondaire">
           Développeuse back-end · Lyon
         </p>
       </div>
 
       <CertificationMedal />
 
-      <p className="font-serif text-sm text-texte-secondaire">
+      <p className="font-sans text-sm text-texte-secondaire">
         Profil certifié mis en avant ce mois-ci.
       </p>
+
+      {isRecruteur && (
+        <Link
+          href="/messages"
+          className="flex w-full items-center justify-center gap-1 overflow-hidden rounded-lg bg-fond-page p-2 shadow-[0px_1px_2px_0px_rgba(10,13,20,0.03)] outline outline-1 -outline-offset-1 outline-bordure-defaut transition-colors hover:bg-fond-neutre"
+        >
+          <span className="px-1 font-sans text-sm font-medium leading-5 text-texte-secondaire">
+            Contact
+          </span>
+        </Link>
+      )}
     </section>
   );
 }
