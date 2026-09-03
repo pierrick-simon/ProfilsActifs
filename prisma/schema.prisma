@@ -8,21 +8,22 @@ datasource db {
 }
 
 model account {
-  id String @id
-  user user @relation(fields: [userId], references: [id])
-  userId String
-  issuer String
-  accountId String
-  providerId String
-  accessToken String?
-  refreshToken String?
-  accessTokenExpiresAt DateTime? @db.Timestamptz(3)
+  id                    String    @id
+  user                  user      @relation(fields: [userId], references: [id])
+  userId                String
+  issuer                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
   refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
-  scope String?
-  idToken String?
-  password String?
-  createdAt DateTime @db.Timestamptz(3)
-  updatedAt DateTime @db.Timestamptz(3)
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @db.Timestamptz(3)
+  updatedAt             DateTime  @db.Timestamptz(3)
+
   @@index([userId], map: "account_userId_idx")
 }
 
@@ -87,10 +88,10 @@ model formResponse {
 }
 
 model session {
-  id String @id
-  user user @relation(fields: [userId], references: [id])
-  userId String
-  token String @unique
+  id        String   @id
+  user      user     @relation(fields: [userId], references: [id])
+  userId    String
+  token     String   @unique
   expiresAt DateTime @db.Timestamptz(3)
   ipAddress String?
   userAgent String?
@@ -124,25 +125,26 @@ model userSkill {
 }
 
 model user {
+  id             String          @id
+  name           String
+  email          String          @unique
+  emailVerified  Boolean
+  image          String?
+  createdAt      DateTime        @db.Timestamptz(3)
+  updatedAt      DateTime        @db.Timestamptz(3)
+  acceptedTerms  Boolean
+  localisation   String
+  role           String?
+  banned         Boolean?
+  banReason      String?
+  banExpires     DateTime?       @db.Timestamptz(3)
+  activitySector ActivitySector?
 
-  id                               String          @id
-  name                             String
-  email                            String          @unique
-  emailVerified                    Boolean
-  image                            String?
-  createdAt                        DateTime        @db.Timestamptz(3)
-  updatedAt                        DateTime        @db.Timestamptz(3)
-  acceptedTerms                    Boolean
-  role                             String?
-  banned                           Boolean?
-  banReason                        String?
-  banExpires                       DateTime?       @db.Timestamptz(3)
-  activitySector                   ActivitySector?
   account                          account[]
-  like_like_likedUserIdTouser      like[]          @relation("like_likedUserIdTouser")
-  like_like_likerUserIdTouser      like[]          @relation("like_likerUserIdTouser")
-  message_message_receiveridTouser message[]       @relation("message_receiveridTouser")
-  message_message_senderidTouser   message[]       @relation("message_senderidTouser")
+  like_like_likedUserIdTouser      like[]         @relation("like_likedUserIdTouser")
+  like_like_likerUserIdTouser      like[]         @relation("like_likerUserIdTouser")
+  message_message_receiveridTouser message[]      @relation("message_receiveridTouser")
+  message_message_senderidTouser   message[]      @relation("message_senderidTouser")
   session                          session[]
   video                            video[]
   userSkill                        userSkill[]
@@ -150,12 +152,13 @@ model user {
 }
 
 model verification {
-  id String @id
+  id         String   @id
   identifier String
-  value String
-  expiresAt DateTime @db.Timestamptz(3)
-  createdAt DateTime @db.Timestamptz(3)
-  updatedAt DateTime @db.Timestamptz(3)
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @db.Timestamptz(3)
+  updatedAt  DateTime @db.Timestamptz(3)
+
   @@index([identifier], map: "verification_identifier_idx")
 }
 
