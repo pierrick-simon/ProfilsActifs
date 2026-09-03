@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@source "../app";
+@source "../components";
+@source "../hooks";
+@source "../lib";
+
 @theme {
   /* Typographie : Marianne, police officielle imposée par la charte */
   --font-sans: var(--font-marianne), ui-sans-serif, system-ui, sans-serif;
