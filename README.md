@@ -16,7 +16,7 @@ docker compose up
 
 And the site will be accessible on port 3000.
 
-If you want to change the port, in `profils-actif/Dockerfile`, on lines 78 and 106, replace `3000` by the desired port number.
+If you want to change the port, in `Dockerfile`, replace `3000` by the desired port number.
 
 ## How to un locally in development environment
 
@@ -34,7 +34,6 @@ docker compose up postgres
 ```
 
 ### 4. Run the server
-In the `profils-actifs` directory:
 ```shell
 npm install
 npm run dev
