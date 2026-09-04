@@ -134,6 +134,7 @@ model user {
   updatedAt      DateTime        @db.Timestamptz(3)
   acceptedTerms  Boolean
   localisation   String
+  dateOfBirth    DateTime        @db.Date
   role           String?
   banned         Boolean?
   banReason      String?
