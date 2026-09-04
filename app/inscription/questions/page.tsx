@@ -38,9 +38,7 @@ type Question =
       choices: Choice[];
     };
 
-// Questionnaire d'inscription. Chaque entrée décrit une étape ; le type
-// détermine le rendu (réponse libre ou choix unique). Ajouter une question
-// ici met automatiquement à jour le nombre d'étapes de l'indicateur.
+
 const questions: Question[] = [
   {
     type: "text",
@@ -97,7 +95,7 @@ export default function QuestionsPage() {
 
   function goBack() {
     if (step === 0) {
-      router.push("/inscription");
+      router.push("/inscription/video");
       return;
     }
     setStep((current) => current - 1);

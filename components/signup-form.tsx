@@ -17,13 +17,55 @@ import {
   UserIcon,
 } from "@/components/icons";
 import AuthUserBadge from "@/components/auth-user-badge";
+import { authClient } from "@/lib/auth_client";
+import { useToast } from "@/components/toast";
 
 
 export default function SignupForm() {
   const router = useRouter();
+  const { showError } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [role, setRole] = useState<"candidat" | "recruteur">("candidat");
+  const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!acceptTerms) {
+      showError("Veuillez accepter les conditions d'utilisation.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    const { error: authError } = await authClient.signUp.email({
+      name,
+      email,
+      password,
+      dateOfBirth: new Date(birthDate),
+      localisation: role === "candidat" ? address : "",
+      acceptedTerms: acceptTerms,
+    });
+    setSubmitting(false);
+
+    if (authError) {
+      showError(
+        authError.message ?? "Impossible de créer le compte.",
+        "Inscription échouée",
+      );
+      return;
+    }
+
+
+    localStorage.setItem("role", role);
+    router.push(role === "candidat" ? "/inscription/video" : "/");
+  }
 
   return (
     <div className="flex h-full flex-col justify-between gap-6 overflow-y-auto p-8">
@@ -57,18 +99,7 @@ export default function SignupForm() {
           </div>
         </div>
 
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            // Mémorise le rôle choisi (pas de back-end pour l'instant) afin
-            // d'adapter l'interface, par exemple les contrôles du fil vidéo.
-            localStorage.setItem("role", role);
-            // Seuls les candidats répondent au questionnaire ; les recruteurs
-            // accèdent directement à la plateforme après l'inscription.
-            router.push(role === "candidat" ? "/inscription/questions" : "/");
-          }}
-        >
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1">
             <span className="font-sans text-sm font-medium text-texte-principal">
               Je m&apos;inscris en tant que <span className="text-bleu-institutionnel">*</span>
@@ -112,6 +143,9 @@ export default function SignupForm() {
               <input
                 id="nom"
                 type="text"
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
                 placeholder="Prénom et nom"
                 autoComplete="name"
                 className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
@@ -128,6 +162,9 @@ export default function SignupForm() {
               <input
                 id="naissance"
                 type="date"
+                required
+                value={birthDate}
+                onChange={(event) => setBirthDate(event.target.value)}
                 autoComplete="bday"
                 className="flex-1 bg-transparent font-sans text-sm text-texte-principal focus:outline-none [color-scheme:light]"
               />
@@ -143,6 +180,9 @@ export default function SignupForm() {
               <input
                 id="email"
                 type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="vous@exemple.fr"
                 autoComplete="email"
                 className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
@@ -160,6 +200,9 @@ export default function SignupForm() {
                 <input
                   id="adresse"
                   type="text"
+                  required
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
                   placeholder="Numéro, rue, code postal, ville"
                   autoComplete="street-address"
                   className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
@@ -177,6 +220,10 @@ export default function SignupForm() {
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
+                required
+                minLength={8}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 placeholder="• • • • • • • •"
                 autoComplete="new-password"
                 className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
@@ -213,10 +260,11 @@ export default function SignupForm() {
 
           <button
             type="submit"
-            className="mt-1 flex w-full items-center justify-center gap-1 overflow-hidden rounded-[10px] bg-bleu-institutionnel bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)] p-2.5 shadow-[0px_0px_0px_1px_var(--color-bleu-institutionnel),0px_1px_2px_0px_rgba(14,18,27,0.24)] outline outline-1 -outline-offset-1 outline-white/10 transition hover:brightness-110"
+            disabled={submitting}
+            className="mt-1 flex w-full items-center justify-center gap-1 overflow-hidden rounded-[10px] bg-bleu-institutionnel bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)] p-2.5 shadow-[0px_0px_0px_1px_var(--color-bleu-institutionnel),0px_1px_2px_0px_rgba(14,18,27,0.24)] outline outline-1 -outline-offset-1 outline-white/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:brightness-100"
           >
             <span className="px-1 font-sans text-sm font-medium leading-5 text-texte-inverse">
-              Créer mon compte
+              {submitting ? "Création..." : "Créer mon compte"}
             </span>
           </button>
         </form>
