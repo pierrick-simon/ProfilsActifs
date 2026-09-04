@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { deleteUploadedFileByUrl, extensionForMimeType, saveUploadedFile } from "@/lib/storage";
-
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MO
-const ALLOWED_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+import {
+  ALLOWED_IMAGE_MIME_TYPES,
+  deleteUploadedFileByUrl,
+  extensionForMimeType,
+  MAX_IMAGE_SIZE_BYTES,
+  saveUploadedFile,
+} from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
