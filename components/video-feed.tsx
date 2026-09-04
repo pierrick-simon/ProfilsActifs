@@ -8,31 +8,66 @@ import {
 } from "@/components/icons";
 import { useRole } from "@/hooks/use-role";
 import { useToast } from "@/components/toast";
+import { authClient } from "@/lib/auth_client";
 
 type FeedVideo = {
   id: string;
   video_url: string;
-  user_id: string;
 };
 
 export default function VideoFeed() {
   const isRecruteur = useRole() === "recruteur";
   const { showError } = useToast();
+  const { data: session, isPending } = authClient.useSession();
+  const userId = session?.user?.id ?? null;
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    if (isPending) {
+      return;
+    }
+
     let active = true;
     async function load() {
+      setLoading(true);
       try {
-        const response = await fetch("/api/feed?limit=20");
+        const endpoint = isRecruteur
+          ? "/api/feed?limit=20"
+          : userId
+            ? `/api/videos?userId=${userId}&limit=20`
+            : null;
+
+        if (!endpoint) {
+          if (active) {
+            setVideos([]);
+          }
+          return;
+        }
+
+        const response = await fetch(endpoint);
         if (!response.ok) {
           throw new Error("feed unavailable");
         }
         const data = await response.json();
+
+        const list: FeedVideo[] = isRecruteur
+          ? (Array.isArray(data.videos) ? data.videos : []).map(
+              (v: { id: string; video_url: string }) => ({
+                id: v.id,
+                video_url: v.video_url,
+              }),
+            )
+          : (Array.isArray(data.items) ? data.items : []).map(
+              (v: { id: string; url: string }) => ({
+                id: v.id,
+                video_url: v.url,
+              }),
+            );
+
         if (active) {
-          setVideos(Array.isArray(data.videos) ? data.videos : []);
+          setVideos(list);
         }
       } catch {
         if (active) {
@@ -48,7 +83,7 @@ export default function VideoFeed() {
     return () => {
       active = false;
     };
-  }, [showError]);
+  }, [isRecruteur, userId, isPending, showError]);
 
   const hasVideos = videos.length > 0;
   const current = hasVideos ? videos[index] : null;

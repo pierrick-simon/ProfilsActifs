@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   BriefcaseIcon,
   CalendarIcon,
@@ -22,7 +21,6 @@ import { useToast } from "@/components/toast";
 
 
 export default function SignupForm() {
-  const router = useRouter();
   const { showError } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -64,7 +62,9 @@ export default function SignupForm() {
 
 
     localStorage.setItem("role", role);
-    router.push(role === "candidat" ? "/inscription/video" : "/");
+    window.location.assign(
+      role === "candidat" ? "/inscription/video" : "/",
+    );
   }
 
   return (
