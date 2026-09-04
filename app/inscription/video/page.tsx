@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ChevronLeftIcon, CloseIcon, LinkIcon, PlusIcon } from "@/components/icons";
 import { useToast } from "@/components/toast";
 
+const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100 Mo, aligné sur l'API.
+
 export default function VideoUploadPage() {
   const router = useRouter();
   const { showError } = useToast();
@@ -19,7 +21,12 @@ export default function VideoUploadPage() {
 
   function handleSelect(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) {
+      return;
+    }
+    if (file.size > MAX_VIDEO_SIZE_BYTES) {
+      showError("La vidéo ne doit pas dépasser 100 Mo.", "Fichier trop volumineux");
       return;
     }
     if (videoUrl) {
@@ -33,21 +40,28 @@ export default function VideoUploadPage() {
     if (submitting) {
       return;
     }
-    if (!videoFile) {
-      router.push("/inscription/questions");
-      return;
-    }
+
+    const trimmedLink = link.trim();
+    let response: Response | null = null;
 
     setSubmitting(true);
-    const formData = new FormData();
-    formData.append("file", videoFile);
-    const response = await fetch("/api/videos", {
-      method: "POST",
-      body: formData,
-    });
+    if (videoFile) {
+      const formData = new FormData();
+      formData.append("file", videoFile);
+      response = await fetch("/api/videos", {
+        method: "POST",
+        body: formData,
+      });
+    } else if (trimmedLink) {
+      response = await fetch("/api/videos/from-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmedLink }),
+      });
+    }
     setSubmitting(false);
 
-    if (!response.ok) {
+    if (response && !response.ok) {
       const data = await response.json().catch(() => null);
       showError(
         data?.error ?? "L'envoi de la vidéo a échoué.",
