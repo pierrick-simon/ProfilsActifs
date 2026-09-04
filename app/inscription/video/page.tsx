@@ -4,12 +4,16 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeftIcon, CloseIcon, LinkIcon, PlusIcon } from "@/components/icons";
+import { useToast } from "@/components/toast";
 
 export default function VideoUploadPage() {
   const router = useRouter();
+  const { showError } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [link, setLink] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const previewUrl = videoUrl ?? (link.trim() || null);
 
@@ -21,7 +25,38 @@ export default function VideoUploadPage() {
     if (videoUrl) {
       URL.revokeObjectURL(videoUrl);
     }
+    setVideoFile(file);
     setVideoUrl(URL.createObjectURL(file));
+  }
+
+  async function handleContinue() {
+    if (submitting) {
+      return;
+    }
+    if (!videoFile) {
+      router.push("/inscription/questions");
+      return;
+    }
+
+    setSubmitting(true);
+    const formData = new FormData();
+    formData.append("file", videoFile);
+    const response = await fetch("/api/videos", {
+      method: "POST",
+      body: formData,
+    });
+    setSubmitting(false);
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      showError(
+        data?.error ?? "L'envoi de la vidéo a échoué.",
+        "Vidéo non envoyée",
+      );
+      return;
+    }
+
+    router.push("/inscription/questions");
   }
 
   return (
@@ -113,11 +148,12 @@ export default function VideoUploadPage() {
 
             <button
               type="button"
-              onClick={() => router.push("/inscription/questions")}
-              className="flex w-full items-center justify-center gap-1 overflow-hidden rounded-[10px] bg-bleu-institutionnel bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)] p-2.5 shadow-[0px_0px_0px_1px_var(--color-bleu-institutionnel),0px_1px_2px_0px_rgba(14,18,27,0.24)] outline outline-1 -outline-offset-1 outline-white/10 transition hover:brightness-110"
+              onClick={handleContinue}
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-1 overflow-hidden rounded-[10px] bg-bleu-institutionnel bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)] p-2.5 shadow-[0px_0px_0px_1px_var(--color-bleu-institutionnel),0px_1px_2px_0px_rgba(14,18,27,0.24)] outline outline-1 -outline-offset-1 outline-white/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:brightness-100"
             >
               <span className="px-1 font-sans text-sm font-medium leading-5 text-texte-inverse">
-                Continuer
+                {submitting ? "Envoi..." : "Continuer"}
               </span>
             </button>
           </div>
