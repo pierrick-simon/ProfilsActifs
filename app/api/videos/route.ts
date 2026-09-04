@@ -19,13 +19,19 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const requestedUserId = searchParams.get("userId");
   const isOwnVideos = requestedUserId === session.user.id;
+  const isAdmin = session.user.role === "admin";
+  const validatedParam = searchParams.get("validated");
   const cursor = searchParams.get("cursor");
   const limit = Math.min(Number(searchParams.get("limit") ?? 20) || 20, 50);
 
   const videos = await prisma.video.findMany({
     where: {
       ...(requestedUserId ? { userId: requestedUserId } : {}),
-      ...(isOwnVideos ? {} : { validated: true }),
+      ...(isOwnVideos || isAdmin
+        ? validatedParam !== null
+          ? { validated: validatedParam === "true" }
+          : {}
+        : { validated: true }),
     },
     orderBy: { id: "asc" },
     take: limit + 1,
