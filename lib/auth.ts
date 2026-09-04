@@ -10,6 +10,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  user: {
+    additionalFields: {
+      acceptedTerms: {
+        type: "boolean",
+        required: true,
+        input: true,
+      },
+    },
+  },
   plugins: [
       admin()
   ]
