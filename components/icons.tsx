@@ -19,6 +19,19 @@ function LineIcon({ className, children }: IconProps & { children: React.ReactNo
   );
 }
 
+export function AlertFillIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 5h2v7h-2V7Zm0 9h2v2h-2v-2Z" />
+    </svg>
+  );
+}
+
 export function HomeIcon({ className }: IconProps) {
   return (
     <LineIcon className={className}>
@@ -227,6 +240,15 @@ export function GlobeIcon({ className }: IconProps) {
     <LineIcon className={className}>
       <circle cx="12" cy="12" r="10" />
       <path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20z" />
+    </LineIcon>
+  );
+}
+
+export function LinkIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </LineIcon>
   );
 }

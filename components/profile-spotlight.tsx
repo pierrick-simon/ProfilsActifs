@@ -6,7 +6,9 @@ import SegmentedControl from "@/components/segmented-control";
 import { useRole } from "@/hooks/use-role";
 
 export default function ProfileSpotlight() {
-  const isRecruteur = useRole() === "recruteur";
+  const role = useRole();
+  const isRecruteur = role === "recruteur";
+  const isCandidat = role === "candidat";
 
   return (
     <section className="flex w-full flex-col items-center gap-4 rounded-xl border border-bordure-defaut bg-fond-page p-6">
@@ -38,7 +40,44 @@ export default function ProfileSpotlight() {
           </span>
         </Link>
       )}
+
+      {isCandidat && (
+        <div className="flex w-full flex-col gap-4">
+          <SegmentedControl options={["Mes statistiques"]} activeIndex={0} />
+          <div className="flex w-full flex-col gap-4">
+            <Statistic label="Vues" value="3 484" delta="+7,1 %" />
+            <Statistic label="J'aime" value="1 209" delta="+4,3 %" />
+          </div>
+        </div>
+      )}
     </section>
+  );
+}
+
+// Ligne de statistique du panneau candidat : intitulé, valeur et évolution par
+// rapport à la période précédente.
+function Statistic({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta: string;
+}) {
+  return (
+    <div className="flex w-full flex-col gap-1 text-left">
+      <span className="font-sans text-sm text-texte-secondaire">{label}</span>
+      <div className="flex items-baseline gap-2">
+        <span className="font-sans text-3xl font-semibold text-texte-principal">
+          {value}
+        </span>
+        <span className="font-sans text-sm font-medium text-emerald-600">
+          {delta}
+        </span>
+        <span className="font-sans text-sm text-texte-tertiaire">vs préc.</span>
+      </div>
+    </div>
   );
 }
 
