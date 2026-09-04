@@ -2,23 +2,25 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useRole } from "@/hooks/use-role";
+import { authClient } from "@/lib/auth_client";
 
+// Protège les pages réservées aux utilisateurs connectés : sans session
+// better-auth valide, on renvoie vers l'inscription.
 export default function RequireRegistration({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const role = useRole();
+  const { data: session, isPending } = authClient.useSession();
 
   useEffect(() => {
-    if (!role) {
+    if (!isPending && !session) {
       router.replace("/inscription");
     }
-  }, [role, router]);
+  }, [isPending, session, router]);
 
-  if (!role) {
+  if (isPending || !session) {
     return null;
   }
 

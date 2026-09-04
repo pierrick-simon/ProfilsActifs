@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -12,10 +13,35 @@ import {
   MailIcon,
 } from "@/components/icons";
 import AuthUserBadge from "@/components/auth-user-badge";
+import { authClient } from "@/lib/auth_client";
+import { useToast } from "@/components/toast";
 
 export default function LoginForm() {
+  const router = useRouter();
+  const { showError } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setSubmitting(true);
+    const { error: authError } = await authClient.signIn.email({
+      email,
+      password,
+      rememberMe: keepLoggedIn,
+    });
+    setSubmitting(false);
+
+    if (authError) {
+      showError(authError.message ?? "Identifiants invalides.", "Connexion échouée");
+      return;
+    }
+
+    router.push("/");
+  }
 
   return (
     <div className="flex h-full flex-col justify-between gap-8 p-8">
@@ -49,7 +75,7 @@ export default function LoginForm() {
           </div>
         </div>
 
-        <form className="flex flex-col gap-3">
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1">
             <label htmlFor="email" className="font-sans text-sm font-medium text-texte-principal">
               Adresse e-mail <span className="text-bleu-institutionnel">*</span>
@@ -59,6 +85,9 @@ export default function LoginForm() {
               <input
                 id="email"
                 type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="vous@exemple.fr"
                 autoComplete="email"
                 className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
@@ -75,6 +104,9 @@ export default function LoginForm() {
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 placeholder="• • • • • • • •"
                 autoComplete="current-password"
                 className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
@@ -117,17 +149,18 @@ export default function LoginForm() {
 
           <button
             type="submit"
-            className="mt-1 flex w-full items-center justify-center gap-1 overflow-hidden rounded-[10px] bg-bleu-institutionnel bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)] p-2.5 shadow-[0px_0px_0px_1px_var(--color-bleu-institutionnel),0px_1px_2px_0px_rgba(14,18,27,0.24)] outline outline-1 -outline-offset-1 outline-white/10 transition hover:brightness-110"
+            disabled={submitting}
+            className="mt-1 flex w-full items-center justify-center gap-1 overflow-hidden rounded-[10px] bg-bleu-institutionnel bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)] p-2.5 shadow-[0px_0px_0px_1px_var(--color-bleu-institutionnel),0px_1px_2px_0px_rgba(14,18,27,0.24)] outline outline-1 -outline-offset-1 outline-white/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:brightness-100"
           >
             <span className="px-1 font-sans text-sm font-medium leading-5 text-texte-inverse">
-              Se connecter
+              {submitting ? "Connexion..." : "Se connecter"}
             </span>
           </button>
         </form>
       </div>
 
       <footer className="flex items-center justify-between">
-        <span className="font-sans text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
+        <span className="font-sans text-sm text-texte-secondaire">© 2026 ProfilsActifs</span>
         <button
           type="button"
           className="flex items-center gap-1 font-sans text-sm text-texte-secondaire transition-colors hover:text-texte-principal"

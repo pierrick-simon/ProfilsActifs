@@ -86,6 +86,10 @@ COPY --from=builder --chown=node:node /app/public ./public
 RUN mkdir build
 RUN chown node:node build
 
+# Directory for locally-stored video/image uploads (mounted as a volume in production)
+RUN mkdir -p uploads/videos uploads/images
+RUN chown -R node:node uploads
+
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=node:node /app/build/standalone ./

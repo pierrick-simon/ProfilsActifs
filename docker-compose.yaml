@@ -15,5 +15,9 @@ services:
     container_name: survivor-nextjs
     env_file:
       - .env
+    environment:
+      - UPLOADS_DIR=/app/uploads
     ports:
       - "3000:3000"
+    volumes:
+      - ${PWD}/uploads/:/app/uploads

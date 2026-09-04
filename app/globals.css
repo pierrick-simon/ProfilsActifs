@@ -19,6 +19,9 @@
   --color-action-sur-blanc: #b75310;
   --color-action-sur-bleu: #FFC197;
 
+  /* États */
+  --color-erreur: #fb3748;
+
   /* Textes */
   --color-texte-principal: #14213d;
   --color-texte-secondaire: #4a5468;

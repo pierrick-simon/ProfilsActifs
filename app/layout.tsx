@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ToastProvider } from "@/components/toast";
 
 // Marianne — typographie officielle de l'État, imposée par la charte graphique.
 const marianne = localFont({
@@ -31,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${marianne.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-fond-page font-sans text-texte-principal">
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
