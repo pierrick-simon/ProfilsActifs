@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -112,8 +113,8 @@ export default function VideoFeed() {
         </div>
       )}
 
-      <div className="flex w-full max-w-[420px] flex-col items-center gap-3">
-        <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-texte-principal">
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative aspect-[9/16] h-[calc(100dvh-6rem)] max-h-[960px] w-auto overflow-hidden rounded-2xl bg-texte-principal">
           {current ? (
             <video
               key={current.id}
@@ -124,12 +125,28 @@ export default function VideoFeed() {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full items-center justify-center px-6 text-center">
-              <span className="font-sans text-sm font-medium text-texte-inverse/70">
-                {loading
-                  ? "Chargement des vidéos..."
-                  : "Aucune vidéo pour le moment."}
-              </span>
+            <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+              {loading ? (
+                <span className="font-sans text-sm font-medium text-texte-inverse/70">
+                  Chargement des vidéos...
+                </span>
+              ) : isRecruteur ? (
+                <span className="font-sans text-sm font-medium text-texte-inverse/70">
+                  Aucune vidéo pour le moment.
+                </span>
+              ) : (
+                <>
+                  <span className="font-sans text-sm font-medium text-texte-inverse/70">
+                    Vous n&apos;avez pas encore publié de vidéo.
+                  </span>
+                  <Link
+                    href="/inscription/video"
+                    className="inline-flex items-center justify-center rounded-[10px] bg-fond-page px-4 py-2.5 font-sans text-sm font-medium text-texte-principal shadow-[0px_1px_2px_0px_rgba(10,13,20,0.03)] transition-colors hover:bg-fond-neutre"
+                  >
+                    Ajouter ma vidéo
+                  </Link>
+                </>
+              )}
             </div>
           )}
 
