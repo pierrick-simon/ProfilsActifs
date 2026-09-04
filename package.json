@@ -15,9 +15,11 @@
     "better-auth": "^1.7.2",
     "dotenv": "^17.4.2",
     "next": "16.3.3",
+    "next-swagger-doc": "^0.5.0",
     "pg": "^8.23.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "swagger-ui-react": "^5.32.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -25,10 +27,17 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/swagger-ui-react": "^5.18.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "swagger-ui-react": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }
