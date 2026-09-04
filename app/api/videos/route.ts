@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { fileTypeFromBuffer } from "file-type";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
@@ -12,7 +13,7 @@ import {
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -51,14 +52,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > MAX_VIDEO_SIZE_BYTES) {
     return NextResponse.json(
-      { error: "Video exceeds the 100MB size limit" },
-      { status: 413 },
+        { error: "La vidéo dépasse la limite de taille de 100 Mo" },
+        { status: 413 },
     );
   }
 
@@ -66,21 +67,40 @@ export async function POST(request: NextRequest) {
   const file = formData.get("file");
 
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: "Missing file" }, { status: 400 });
+    return NextResponse.json({ error: "Fichier manquant" }, { status: 400 });
   }
 
   if (file.size > MAX_VIDEO_SIZE_BYTES) {
     return NextResponse.json(
-      { error: "Video exceeds the 100MB size limit" },
-      { status: 413 },
+        { error: "La vidéo dépasse la limite de taille de 100 Mo" },
+        { status: 413 },
     );
   }
 
+  // Rejet rapide des types déclarés manifestement invalides (contrôle peu coûteux, mais pas suffisant à lui seul)
   if (!extensionForMimeType(file.type) || !ALLOWED_VIDEO_MIME_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: "Unsupported video type" }, { status: 415 });
+    return NextResponse.json({ error: "Type de vidéo non pris en charge" }, { status: 415 });
   }
 
-  const { url } = await saveUploadedFile(file, "videos");
+  // Ne lire que les premiers octets pour détecter la signature du fichier (évite de charger tout le fichier en mémoire)
+  const headerChunk = Buffer.from(await file.slice(0, 4100).arrayBuffer());
+  const detected = await fileTypeFromBuffer(headerChunk);
+
+  if (!detected || !ALLOWED_VIDEO_MIME_TYPES.includes(detected.mime)) {
+    return NextResponse.json(
+        { error: "Le contenu du fichier ne correspond à aucun type de vidéo autorisé" },
+        { status: 415 },
+    );
+  }
+
+  const detectedExtension = extensionForMimeType(detected.mime);
+  if (!detectedExtension) {
+    return NextResponse.json({ error: "Type de vidéo non pris en charge" }, { status: 415 });
+  }
+
+  // On repasse le fichier original par référence, sans le recharger entièrement en mémoire
+  const validatedFile = new File([file], file.name, { type: detected.mime });
+  const { url } = await saveUploadedFile(validatedFile, "videos");
 
   const video = await prisma.video.create({
     data: {
