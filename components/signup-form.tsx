@@ -64,7 +64,7 @@ export default function SignupForm() {
 
 
     localStorage.setItem("role", role);
-    router.push(role === "candidat" ? "/inscription/questions" : "/");
+    router.push(role === "candidat" ? "/inscription/video" : "/");
   }
 
   return (
