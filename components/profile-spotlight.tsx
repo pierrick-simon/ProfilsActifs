@@ -4,11 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import SegmentedControl from "@/components/segmented-control";
 import { useRole } from "@/hooks/use-role";
+import { useCurrentProfile } from "@/components/current-profile";
 
 export default function ProfileSpotlight() {
   const role = useRole();
   const isRecruteur = role === "recruteur";
   const isCandidat = role === "candidat";
+  const { profile } = useCurrentProfile();
+  const displayName = profile?.name?.trim() || "Aucun profil";
 
   return (
     <section className="flex w-full flex-col items-center gap-4 rounded-xl border border-bordure-defaut bg-fond-page p-6">
@@ -18,7 +21,9 @@ export default function ProfileSpotlight() {
       />
 
       <div className="flex flex-col items-center gap-1 text-center">
-        <p className="font-sans text-lg font-medium text-texte-principal">Amina K.</p>
+        <p className="font-sans text-lg font-medium text-texte-principal">
+          {displayName}
+        </p>
         <p className="font-sans text-sm text-texte-secondaire">
           Développeuse back-end · Lyon
         </p>

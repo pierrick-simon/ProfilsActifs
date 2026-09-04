@@ -9,15 +9,24 @@ import {
 import { useRole } from "@/hooks/use-role";
 import { useToast } from "@/components/toast";
 import { authClient } from "@/lib/auth_client";
+import { useCurrentProfile } from "@/components/current-profile";
 
 type FeedVideo = {
   id: string;
   video_url: string;
+  name: string;
+};
+
+type VideoItem = {
+  id: string;
+  url: string;
+  user?: { name?: string | null } | null;
 };
 
 export default function VideoFeed() {
   const isRecruteur = useRole() === "recruteur";
   const { showError } = useToast();
+  const { setProfile } = useCurrentProfile();
   const { data: session, isPending } = authClient.useSession();
   const userId = session?.user?.id ?? null;
   const [videos, setVideos] = useState<FeedVideo[]>([]);
@@ -34,7 +43,7 @@ export default function VideoFeed() {
       setLoading(true);
       try {
         const endpoint = isRecruteur
-          ? "/api/feed?limit=20"
+          ? "/api/videos?limit=20"
           : userId
             ? `/api/videos?userId=${userId}&limit=20`
             : null;
@@ -52,19 +61,13 @@ export default function VideoFeed() {
         }
         const data = await response.json();
 
-        const list: FeedVideo[] = isRecruteur
-          ? (Array.isArray(data.videos) ? data.videos : []).map(
-              (v: { id: string; video_url: string }) => ({
-                id: v.id,
-                video_url: v.video_url,
-              }),
-            )
-          : (Array.isArray(data.items) ? data.items : []).map(
-              (v: { id: string; url: string }) => ({
-                id: v.id,
-                video_url: v.url,
-              }),
-            );
+        const list: FeedVideo[] = (
+          Array.isArray(data.items) ? (data.items as VideoItem[]) : []
+        ).map((v) => ({
+          id: v.id,
+          video_url: v.url,
+          name: v.user?.name ?? "",
+        }));
 
         if (active) {
           setVideos(list);
@@ -87,6 +90,10 @@ export default function VideoFeed() {
 
   const hasVideos = videos.length > 0;
   const current = hasVideos ? videos[index] : null;
+
+  useEffect(() => {
+    setProfile(current ? { name: current.name } : null);
+  }, [current, setProfile]);
 
   const goPrev = () =>
     setIndex((c) => (c - 1 + videos.length) % videos.length);
