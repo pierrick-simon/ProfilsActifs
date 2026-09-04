@@ -133,6 +133,7 @@ model user {
   createdAt      DateTime        @db.Timestamptz(3)
   updatedAt      DateTime        @db.Timestamptz(3)
   acceptedTerms  Boolean
+  dateOfBirth    DateTime?       @db.Timestamptz(3)
   localisation   String
   dateOfBirth    DateTime        @db.Date
   role           String?
