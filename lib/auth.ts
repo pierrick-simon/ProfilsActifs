@@ -12,9 +12,21 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      acceptedTerms: { type: "boolean", required: true, input: true },
-      dateOfBirth: { type: "date", required: true, input: true },
-      localisation: { type: "string", required: false, input: true },
+      acceptedTerms: {
+        type: "boolean",
+        required: true,
+        input: true,
+      },
+      localisation: {
+        type: "string",
+        required: true,
+        input: true,
+      },
+      dateOfBirth: {
+        type: "date",
+        required: true,
+        input: true,
+      },
     },
   },
   plugins: [

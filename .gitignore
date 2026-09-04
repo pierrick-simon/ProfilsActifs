@@ -21,6 +21,9 @@
 # db
 /db/data
 
+# uploaded media
+/uploads
+
 # prisma
 /prisma/prisma
 
