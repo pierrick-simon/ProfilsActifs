@@ -1,5 +1,6 @@
 import path from "path";
-import { readdirSync, lstatSync } from "fs";
+import { readdirSync, lstatSync, writeFileSync } from "fs";
+import {NextResponse} from "next/server";
 
 export interface SingleChoiceOptions {
     choices: string[];
@@ -144,15 +145,15 @@ export function isFormValid(formData: JSON): { valid: boolean; errors: string[] 
     return {valid: errors.length === 0, errors}
 }
 
-export const FILE_NAME_MATH = /^questions\.v(\d*)\.json$/
+export const FILE_NAME_MATH = /^questions\.v(\d+)\.json$/
 
 export function getMostRecentFile(): string | null {
     const formFolder = path.join(process.cwd(), "certification");
 
     const recentFiles =
         readdirSync(formFolder)
-            .filter(f => lstatSync(f).isFile())
-            .map(file => ({ file, mtime: lstatSync(file).mtime }))
+            .filter(f => lstatSync(path.join(formFolder, f)).isFile())
+            .map(file => ({ file, mtime: lstatSync(path.join(formFolder, file)).mtime }))
             .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 
     if (recentFiles.length === 0) {
@@ -163,5 +164,37 @@ export function getMostRecentFile(): string | null {
         return null;
     }
 
-    return recentFiles[0].file;
+    return path.join(formFolder, recentFiles[0].file);
+}
+
+export function getFormVersionFromFileName(fileName: string): number | null {
+    const match = FILE_NAME_MATH.exec(fileName);
+    if (!match) {
+        return null;
+    }
+    const version = parseInt(match[1], 10);
+    return Number.isNaN(version) ? null : version;
+}
+
+export function getFormFileName(version: number): string {
+    return `questions.v${version}.json`;
+}
+
+export function saveNewForm(formData: Form): string {
+    const mostRecentFile = getMostRecentFile();
+    let nextVersion = 1;
+    if (mostRecentFile !== null) {
+        const formVersionFromFileName = getFormVersionFromFileName(mostRecentFile);
+        if (formVersionFromFileName !== null) {
+            nextVersion = formVersionFromFileName + 1;
+        }
+    }
+    const newFileName = getFormFileName(nextVersion);
+    const formFolder = path.join(process.cwd(), "certification");
+    const newFilePath = path.join(formFolder, newFileName);
+
+    // Save the file
+    writeFileSync(newFilePath, JSON.stringify(formData, null, 2), "utf-8");
+
+    return newFilePath;
 }
