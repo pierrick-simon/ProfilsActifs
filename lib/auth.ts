@@ -27,6 +27,11 @@ export const auth = betterAuth({
         required: true,
         input: true,
       },
+      certifcation: {
+        type: "date",
+        required: false,
+        input: true,
+      },
     },
   },
   plugins: [

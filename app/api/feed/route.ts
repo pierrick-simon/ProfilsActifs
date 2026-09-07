@@ -103,6 +103,22 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // 7. Check which of the returned videos' profiles the viewer already put in his favory
+  let favoredProfileIds = new Set<string>();
+  if (viewerId) {
+    const profileIds = Array.from(new Set(returnedVideos.map((v) => v.userId)));
+    if (profileIds.length > 0) {
+      const favorites = await prisma.favory.findMany({
+        where: {
+          favoriterUserId: viewerId,
+          favoredUserId: { in: profileIds },
+        },
+        select: { favoredUserId: true },
+      });
+      favoredProfileIds = new Set(favorites.map((l) => l.favoredUserId));
+    }
+  }
+
   const resolvedVideos = await Promise.all(
     returnedVideos.map(async (v) => {
       const playback = await resolveVideoPlayback(v);
@@ -111,12 +127,8 @@ export async function GET(request: NextRequest) {
         created_at: v.createdAt.toISOString(),
         video_url: playback.url,
         video_status: playback.status,
-        thumbnail_url: "",
-        caption: "",
         user_id: v.userId,
-        like_count: 0,
-        comment_count: 0,
-        is_profile_liked: likedProfileIds.has(v.userId),
+        is_profile_favored: favoredProfileIds.has(v.userId),
       };
     }),
   );
