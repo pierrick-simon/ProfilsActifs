@@ -41,7 +41,15 @@ export async function GET(request: NextRequest) {
       views: true,
       validated: true,
       userId: true,
-      user: { select: { id: true, name: true, image: true } },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          activitySector: true,
+          localisation: true,
+        },
+      },
     },
   });
 
