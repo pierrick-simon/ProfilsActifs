@@ -32,6 +32,66 @@ export function PlayIcon({ className }: IconProps) {
   );
 }
 
+export function MoreIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="5" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="12" cy="19" r="1.6" />
+    </svg>
+  );
+}
+
+export function BanIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M5.6 5.6l12.8 12.8" />
+    </LineIcon>
+  );
+}
+
+export function ShieldCheckIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
+      <path d="M9 12l2 2 4-4" />
+    </LineIcon>
+  );
+}
+
+export function ArrowUpRightIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="M7 17L17 7" />
+      <path d="M9 7h8v8" />
+    </LineIcon>
+  );
+}
+
+export function ClockIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </LineIcon>
+  );
+}
+
+export function VideoIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="M15 10l5-3v10l-5-3" />
+      <rect x="3" y="6" width="12" height="12" rx="2" />
+    </LineIcon>
+  );
+}
+
 export function AlertFillIcon({ className }: IconProps) {
   return (
     <svg
