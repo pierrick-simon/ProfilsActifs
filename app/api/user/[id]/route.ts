@@ -80,8 +80,6 @@ export async function GET(
       certification_date: user.certification
         ? user.certification.toISOString()
         : null,
-      like: likeCount,
-      like_today: likeCountToday,
       favory: favoryCount,
       favory_today: favoryCountToday,
       video_url: playback?.url ?? null,

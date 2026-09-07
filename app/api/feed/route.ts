@@ -128,7 +128,6 @@ export async function GET(request: NextRequest) {
         video_url: playback.url,
         video_status: playback.status,
         user_id: v.userId,
-        is_profile_liked: likedProfileIds.has(v.userId),
         is_profile_favored: favoredProfileIds.has(v.userId),
       };
     }),
