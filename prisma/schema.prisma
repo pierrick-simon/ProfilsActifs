@@ -150,6 +150,7 @@ model user {
   acceptedTerms  Boolean
   localisation   String
   dateOfBirth    DateTime        @db.Date
+  certification  DateTime?       @db.Timestamptz(3)
   role           String?
   banned         Boolean?
   banReason      String?
