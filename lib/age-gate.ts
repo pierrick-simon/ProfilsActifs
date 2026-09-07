@@ -29,3 +29,20 @@ export function getAgeGatedWhereClause(isRecruiter: boolean, now: Date = new Dat
     },
   };
 }
+
+/**
+ * Single-row equivalent of `getAgeGatedWhereClause`, for endpoints that already
+ * loaded one video/profile and need a boolean instead of a Prisma filter.
+ */
+export function isAgeGateBlocked(
+  dateOfBirth: Date,
+  isRecruiter: boolean,
+  now: Date = new Date(),
+): boolean {
+  if (isRecruiter) {
+    return false;
+  }
+
+  const { cutoff16, cutoff18 } = getMinorAgeCutoffs(now);
+  return dateOfBirth > cutoff18 && dateOfBirth <= cutoff16;
+}

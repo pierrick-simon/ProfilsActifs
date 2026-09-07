@@ -11,7 +11,10 @@ export async function GET(
 ) {
   const { type, filename } = await params;
 
-  if (type !== "videos" && type !== "images") {
+  // Videos are intentionally excluded: they are only ever served through the
+  // rights-checked /api/videos/stream/[providerId] route. Only images (avatars),
+  // which are meant to be publicly viewable, still go through this route.
+  if (type !== "images") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   if (!FILENAME_PATTERN.test(filename)) {

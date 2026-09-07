@@ -35,7 +35,6 @@ export default function VideoFeed() {
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
-  // Profils « likés » par l'utilisateur courant, et likes en cours d'envoi.
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
 
@@ -79,6 +78,30 @@ export default function VideoFeed() {
         if (active) {
           setVideos(list);
         }
+
+        if (isRecruteur) {
+          try {
+            const feedResponse = await fetch("/api/feed?limit=50");
+            if (feedResponse.ok) {
+              const feedData = await feedResponse.json();
+              const liked = new Set<string>(
+                (Array.isArray(feedData.videos)
+                  ? (feedData.videos as {
+                      user_id: string;
+                      is_profile_liked?: boolean;
+                    }[])
+                  : []
+                )
+                  .filter((v) => v.is_profile_liked)
+                  .map((v) => v.user_id),
+              );
+              if (active) {
+                setLikedIds(liked);
+              }
+            }
+          } catch {
+          }
+        }
       } catch {
         if (active) {
           showError("Impossible de charger les vidéos.", "Fil indisponible");
@@ -99,15 +122,15 @@ export default function VideoFeed() {
   const current = hasVideos ? videos[index] : null;
 
   useEffect(() => {
-    setProfile(current ? { name: current.name } : null);
+    setProfile(
+      current ? { name: current.name, userId: current.userId } : null,
+    );
   }, [current, setProfile]);
 
   const goPrev = () =>
     setIndex((c) => (c - 1 + videos.length) % videos.length);
   const goNext = () => setIndex((c) => (c + 1) % videos.length);
 
-  // Like / unlike du profil propriétaire de la vidéo. Mise à jour optimiste :
-  // on bascule l'état tout de suite, puis on revient en arrière si l'API échoue.
   async function toggleLike(ownerId: string) {
     if (!ownerId || ownerId === userId || likingIds.has(ownerId)) {
       return;
@@ -134,7 +157,6 @@ export default function VideoFeed() {
         throw new Error("like failed");
       }
     } catch {
-      // Échec réseau/serveur : on rétablit l'état précédent.
       setLikedIds((current) => {
         const next = new Set(current);
         if (willLike) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { resolveVideoPlayback } from "@/lib/videos";
 
 export async function GET(
   request: NextRequest,
@@ -25,7 +26,14 @@ export async function GET(
       video: {
         orderBy: { createdAt: "desc" },
         take: 1,
-        select: { url: true, views: true, validated: true },
+        select: {
+          id: true,
+          provider: true,
+          providerId: true,
+          status: true,
+          views: true,
+          validated: true,
+        },
       },
     },
   });
@@ -34,7 +42,7 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const city = user.localisation.toString();
+  const city = user.localisation.split(",")[0].trim();
 
   const spaceIndex = user.name.indexOf(" ");
   const firstName =
@@ -58,6 +66,10 @@ export async function GET(
 
   const latestVideo = user.video[0] ?? null;
 
+  const playback = latestVideo
+    ? await resolveVideoPlayback(latestVideo)
+    : null;
+
   return NextResponse.json(
     {
       id: user.id,
@@ -72,7 +84,8 @@ export async function GET(
       like_today: likeCountToday,
       favory: favoryCount,
       favory_today: favoryCountToday,
-      video_url: latestVideo?.url ?? null,
+      video_url: playback?.url ?? null,
+      video_status: playback?.status ?? null,
       video_views: latestVideo?.views ?? null,
       video_validated: latestVideo?.validated ?? null,
     },
