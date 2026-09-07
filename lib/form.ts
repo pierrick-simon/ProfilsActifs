@@ -1,6 +1,7 @@
 import path from "path";
 import { readdirSync, lstatSync, writeFileSync } from "fs";
-import {NextResponse} from "next/server";
+
+const NUM_FORM_QUESTION = 20;
 
 export interface SingleChoiceOptions {
     choices: string[];
@@ -61,12 +62,12 @@ export function isFormValid(formData: JSON): { valid: boolean; errors: string[] 
     const data: any = formData as any
 
     if (typeof data !== "object" || data === null) {
-        errors.push("Root must be a JSON object")
+        errors.push("La racine doit être un objet JSON")
         return {valid: false, errors}
     }
 
     if (!Array.isArray(data.questions)) {
-        errors.push("Root object must contain a 'questions' array")
+        errors.push("L'objet racine doit contenir un tableau 'questions'")
         return {valid: false, errors}
     }
 
@@ -76,71 +77,75 @@ export function isFormValid(formData: JSON): { valid: boolean; errors: string[] 
     data.questions.forEach((q: any, idx: number) => {
         const ctx = `questions[${idx}]`
         if (typeof q !== "object" || q === null) {
-            errors.push(`${ctx} must be an object`)
+            errors.push(`${ctx} doit être un objet`)
             return
         }
 
         const {id, question, type, options, weight} = q
 
         if (typeof id !== "number" || !Number.isInteger(id)) {
-            errors.push(`${ctx}.id must be an integer`)
+            errors.push(`${ctx}.id doit être un entier`)
         } else if (ids.has(id)) {
-            errors.push(`${ctx}.id ${id} is duplicated`)
+            errors.push(`${ctx}.id ${id} est en double`)
         } else {
             ids.add(id)
         }
 
-        if (typeof question !== "string") errors.push(`${ctx}.question must be a string`)
+        if (typeof question !== "string") errors.push(`${ctx}.question doit être une chaîne de caractères`)
         if (typeof type !== "string") {
-            errors.push(`${ctx}.type must be a string`)
+            errors.push(`${ctx}.type doit être une chaîne de caractères`)
             return
         }
-        if (typeof options !== "object" || options === null) errors.push(`${ctx}.options must be an object`)
-        if (typeof weight !== "number" || Number.isNaN(weight)) errors.push(`${ctx}.weight must be a number`)
+        if (typeof options !== "object" || options === null) errors.push(`${ctx}.options doit être un objet`)
+        if (typeof weight !== "number" || Number.isNaN(weight)) errors.push(`${ctx}.weight doit être un nombre`)
 
         if (typeof type === "string" && typeof options === "object" && options !== null) {
             switch (type) {
                 case "single-choice":
-                    if (!Array.isArray(options.choices)) errors.push(`${ctx}.options.choices must be an array of strings`)
-                    else if (options.choices.some((c: any) => typeof c !== "string")) errors.push(`${ctx}.options.choices must contain only strings`)
-                    if (typeof options.answer !== "string") errors.push(`${ctx}.options.answer must be a string`)
-                    else if (Array.isArray(options.choices) && !options.choices.includes(options.answer)) errors.push(`${ctx}.options.answer must be one of options.choices`)
+                    if (!Array.isArray(options.choices)) errors.push(`${ctx}.options.choices doit être un tableau de chaînes de caractères`)
+                    else if (options.choices.some((c: any) => typeof c !== "string")) errors.push(`${ctx}.options.choices ne doit contenir que des chaînes de caractères`)
+                    if (typeof options.answer !== "string") errors.push(`${ctx}.options.answer doit être une chaîne de caractères`)
+                    else if (Array.isArray(options.choices) && !options.choices.includes(options.answer)) errors.push(`${ctx}.options.answer doit correspondre à l'une des valeurs de options.choices`)
                     break
 
                 case "multiple-choice":
-                    if (!Array.isArray(options.choices)) errors.push(`${ctx}.options.choices must be an array of strings`)
-                    else if (options.choices.some((c: any) => typeof c !== "string")) errors.push(`${ctx}.options.choices must contain only strings`)
-                    if (!Array.isArray(options.answer)) errors.push(`${ctx}.options.answer must be an array of strings`)
-                    else if (options.answer.some((a: any) => typeof a !== "string")) errors.push(`${ctx}.options.answer must contain only strings`)
+                    if (!Array.isArray(options.choices)) errors.push(`${ctx}.options.choices doit être un tableau de chaînes de caractères`)
+                    else if (options.choices.some((c: any) => typeof c !== "string")) errors.push(`${ctx}.options.choices ne doit contenir que des chaînes de caractères`)
+                    if (!Array.isArray(options.answer)) errors.push(`${ctx}.options.answer doit être un tableau de chaînes de caractères`)
+                    else if (options.answer.some((a: any) => typeof a !== "string")) errors.push(`${ctx}.options.answer ne doit contenir que des chaînes de caractères`)
                     else if (Array.isArray(options.choices)) {
                         for (const a of options.answer) {
-                            if (!options.choices.includes(a)) errors.push(`${ctx}.options.answer contains value not present in options.choices: ${a}`)
+                            if (!options.choices.includes(a)) errors.push(`${ctx}.options.answer contient une valeur absente de options.choices : ${a}`)
                         }
                     }
                     break
 
                 case "true-false":
-                    if (typeof options.answer !== "boolean") errors.push(`${ctx}.options.answer must be boolean`)
+                    if (typeof options.answer !== "boolean") errors.push(`${ctx}.options.answer doit être un booléen`)
                     break
 
                 case "free-answer":
-                    if (options.answer !== null) errors.push(`${ctx}.options.answer must be null for free-answer questions`)
+                    if (options.answer !== null) errors.push(`${ctx}.options.answer doit être null pour les questions de type free-answer`)
                     break
 
                 case "date":
-                    if (typeof options.answer !== "string") errors.push(`${ctx}.options.answer must be a date string`)
-                    else if (!dateRe.test(options.answer)) errors.push(`${ctx}.options.answer must match DD-MM-YYYY`)
+                    if (typeof options.answer !== "string") errors.push(`${ctx}.options.answer doit être une chaîne de caractères représentant une date`)
+                    else if (!dateRe.test(options.answer)) errors.push(`${ctx}.options.answer doit respecter le format JJ-MM-AAAA`)
                     break
 
                 case "numeric":
-                    if (typeof options.answer !== "number" || Number.isNaN(options.answer)) errors.push(`${ctx}.options.answer must be a number`)
+                    if (typeof options.answer !== "number" || Number.isNaN(options.answer)) errors.push(`${ctx}.options.answer doit être un nombre`)
                     break
 
                 default:
-                    errors.push(`${ctx}.type '${type}' is not supported`)
+                    errors.push(`${ctx}.type '${type}' n'est pas pris en charge`)
             }
         }
     })
+
+    if (data.questions.length != NUM_FORM_QUESTION) {
+        errors.push(`Le formulaire doit contenir ${NUM_FORM_QUESTION} questions`);
+    }
 
     return {valid: errors.length === 0, errors}
 }
