@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  BriefcaseIcon,
   ChevronLeftIcon,
-  ClockIcon,
   EyeIcon,
   MailIcon,
   MapPinIcon,
@@ -29,18 +27,27 @@ const SECTOR_LABELS: Record<string, string> = {
   OTHER: "Autre",
 };
 
-type ProfileData = {
-  user: {
-    id: string;
-    name: string;
-    image: string | null;
-    role: string | null;
-    location: string | null;
-    age: number;
-  };
-  video: { url: string | null; views: number; createdAt: string } | null;
-  skills: string[];
-  responses: { question: string; answer: string }[];
+type VideoItem = {
+  url: string | null;
+  views?: number;
+  userId?: string;
+  user?: {
+    id?: string | null;
+    name?: string | null;
+    image?: string | null;
+    activitySector?: string | null;
+    localisation?: string | null;
+  } | null;
+};
+
+type Profile = {
+  id: string;
+  name: string;
+  image: string | null;
+  role: string | null;
+  location: string | null;
+  views: number;
+  videoUrl: string | null;
 };
 
 function formatViews(count: number): string {
@@ -50,29 +57,13 @@ function formatViews(count: number): string {
   return String(count);
 }
 
-function formatRelative(dateString: string): string {
-  const diff = Date.now() - new Date(dateString).getTime();
-  const days = Math.floor(diff / 86_400_000);
-  if (days <= 0) {
-    const hours = Math.floor(diff / 3_600_000);
-    if (hours <= 0) {
-      return "à l'instant";
-    }
-    return `il y a ${hours} h`;
-  }
-  if (days === 1) {
-    return "il y a 1 jour";
-  }
-  return `il y a ${days} jours`;
-}
-
 export default function ProfileDetail({ userId }: { userId: string }) {
   const isRecruteur = useRole() === "recruteur";
   const { showError } = useToast();
   const { data: session } = authClient.useSession();
   const viewerId = session?.user?.id ?? null;
 
-  const [data, setData] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,13 +71,25 @@ export default function ProfileDetail({ userId }: { userId: string }) {
     async function load() {
       setLoading(true);
       try {
-        const response = await fetch(`/api/profiles/${userId}`);
+        const response = await fetch(`/api/videos?userId=${userId}&limit=1`);
         if (!response.ok) {
           throw new Error("profile unavailable");
         }
-        const payload = (await response.json()) as ProfileData;
+        const data = await response.json();
+        const item: VideoItem | undefined = Array.isArray(data.items)
+          ? data.items[0]
+          : undefined;
+
         if (alive) {
-          setData(payload);
+          setProfile({
+            id: userId,
+            name: item?.user?.name ?? "",
+            image: item?.user?.image ?? null,
+            role: item?.user?.activitySector ?? null,
+            location: item?.user?.localisation ?? null,
+            views: typeof item?.views === "number" ? item.views : 0,
+            videoUrl: item?.url ?? null,
+          });
         }
       } catch {
         if (alive) {
@@ -129,16 +132,16 @@ export default function ProfileDetail({ userId }: { userId: string }) {
       </header>
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 p-4 md:flex-row md:p-8">
-        {loading || !data ? (
+        {loading || !profile ? (
           <DetailSkeleton />
         ) : (
           <>
             <div className="flex flex-1 flex-col lg:w-2/3">
               <div className="relative mx-auto aspect-[9/16] w-full max-w-md overflow-hidden rounded-2xl bg-texte-principal shadow-lg">
-                {data.video?.url ? (
+                {profile.videoUrl ? (
                   <video
-                    src={data.video.url}
-                    poster={data.user.image ?? undefined}
+                    src={profile.videoUrl}
+                    poster={profile.image ?? undefined}
                     controls
                     autoPlay
                     playsInline
@@ -155,15 +158,8 @@ export default function ProfileDetail({ userId }: { userId: string }) {
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex items-center gap-4 font-sans text-sm text-texte-tertiaire">
                   <span className="flex items-center gap-1">
-                    <EyeIcon className="size-4" />{" "}
-                    {formatViews(data.video?.views ?? 0)} vues
+                    <EyeIcon className="size-4" /> {formatViews(profile.views)} vues
                   </span>
-                  {data.video && (
-                    <span className="flex items-center gap-1">
-                      <ClockIcon className="size-4" /> Ajouté{" "}
-                      {formatRelative(data.video.createdAt)}
-                    </span>
-                  )}
                 </div>
                 <button
                   type="button"
@@ -181,106 +177,48 @@ export default function ProfileDetail({ userId }: { userId: string }) {
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
                     <h1 className="font-sans text-2xl font-bold text-texte-principal">
-                      {data.user.name}
+                      {profile.name || "Profil"}
                     </h1>
-                    {data.user.role && (
+                    {profile.role && (
                       <p className="mt-1 font-sans text-lg font-medium text-bleu-institutionnel">
-                        {SECTOR_LABELS[data.user.role] ?? data.user.role}
+                        {SECTOR_LABELS[profile.role] ?? profile.role}
                       </p>
                     )}
                   </div>
                   <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-fond-page bg-fond-bleu-clair font-sans text-lg font-medium text-bleu-institutionnel shadow-md">
-                    {data.user.image ? (
+                    {profile.image ? (
                       <Image
-                        src={data.user.image}
-                        alt={data.user.name}
+                        src={profile.image}
+                        alt={profile.name}
                         width={64}
                         height={64}
                         className="size-full object-cover"
                       />
                     ) : (
-                      data.user.name.charAt(0).toUpperCase()
+                      (profile.name.charAt(0) || "?").toUpperCase()
                     )}
                   </div>
                 </div>
 
-                <div className="mb-6 flex flex-wrap gap-3">
-                  {data.user.location && (
+                {profile.location && (
+                  <div className="mb-6 flex flex-wrap gap-3">
                     <span className="flex items-center gap-1.5 rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-1.5 font-sans text-sm text-texte-secondaire">
                       <MapPinIcon className="size-4 text-texte-tertiaire" />{" "}
-                      {data.user.location}
+                      {profile.location}
                     </span>
-                  )}
-                  <span className="flex items-center gap-1.5 rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-1.5 font-sans text-sm text-texte-secondaire">
-                    <BriefcaseIcon className="size-4 text-texte-tertiaire" />{" "}
-                    {data.user.age} ans
-                  </span>
-                </div>
-
-                {data.skills.length > 0 && (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="mb-2 font-sans text-sm font-bold uppercase tracking-wider text-texte-principal">
-                        Compétences
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {data.skills.map((skill) => (
-                          <span
-                            key={skill}
-                            className="rounded-md border border-bleu-institutionnel/15 bg-fond-bleu-clair px-2.5 py-1 font-sans text-xs font-semibold text-bleu-institutionnel"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 )}
 
                 {canContact && (
-                  <div className="mt-8 flex gap-3">
-                    <Link
-                      href={`/messages/${data.user.id}?name=${encodeURIComponent(data.user.name)}`}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-bleu-institutionnel px-4 py-2.5 font-sans text-sm font-medium text-texte-inverse transition-colors hover:brightness-110"
-                    >
-                      <MailIcon className="size-4" />
-                      Contacter
-                    </Link>
-                  </div>
+                  <Link
+                    href={`/messages/${profile.id}?name=${encodeURIComponent(profile.name)}`}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-bleu-institutionnel px-4 py-2.5 font-sans text-sm font-medium text-texte-inverse transition-colors hover:brightness-110"
+                  >
+                    <MailIcon className="size-4" />
+                    Contacter
+                  </Link>
                 )}
               </div>
-
-              {data.responses.length > 0 && (
-                <div className="rounded-2xl border border-bordure-defaut bg-fond-page p-6 shadow-sm">
-                  <h3 className="mb-4 font-sans text-base font-bold text-texte-principal">
-                    Réponses au questionnaire
-                  </h3>
-                  <div className="space-y-4">
-                    {data.responses.map((item, index) => (
-                      <div
-                        key={item.question}
-                        className={`relative pl-6 before:absolute before:left-2 before:top-2 before:w-0.5 before:bg-bordure-defaut ${
-                          index === data.responses.length - 1
-                            ? "before:hidden"
-                            : "before:bottom-[-1rem]"
-                        }`}
-                      >
-                        <div
-                          className={`absolute left-1 top-1.5 size-2.5 rounded-full border-2 border-fond-page ${
-                            index === 0 ? "bg-bleu-institutionnel" : "bg-bordure-forte"
-                          }`}
-                        />
-                        <h4 className="font-sans text-sm font-semibold text-texte-principal">
-                          {item.question}
-                        </h4>
-                        <p className="font-sans text-xs text-texte-secondaire">
-                          {item.answer}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </>
         )}
@@ -297,7 +235,6 @@ function DetailSkeleton() {
       </div>
       <div className="flex w-full flex-col gap-6 lg:w-1/3">
         <div className="h-64 animate-pulse rounded-2xl bg-bordure-defaut" />
-        <div className="h-40 animate-pulse rounded-2xl bg-bordure-defaut" />
       </div>
     </>
   );
