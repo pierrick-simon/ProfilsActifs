@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  HeartIcon,
-} from "@/components/icons";
+import { ChevronDownIcon, ChevronUpIcon } from "@/components/icons";
 import { useRole } from "@/hooks/use-role";
 import { useToast } from "@/components/toast";
 import { authClient } from "@/lib/auth_client";
@@ -35,8 +31,6 @@ export default function VideoFeed() {
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
-  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
-  const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isPending) {
@@ -78,30 +72,6 @@ export default function VideoFeed() {
         if (active) {
           setVideos(list);
         }
-
-        if (isRecruteur) {
-          try {
-            const feedResponse = await fetch("/api/feed?limit=50");
-            if (feedResponse.ok) {
-              const feedData = await feedResponse.json();
-              const liked = new Set<string>(
-                (Array.isArray(feedData.videos)
-                  ? (feedData.videos as {
-                      user_id: string;
-                      is_profile_liked?: boolean;
-                    }[])
-                  : []
-                )
-                  .filter((v) => v.is_profile_liked)
-                  .map((v) => v.user_id),
-              );
-              if (active) {
-                setLikedIds(liked);
-              }
-            }
-          } catch {
-          }
-        }
       } catch {
         if (active) {
           showError("Impossible de charger les vidéos.", "Fil indisponible");
@@ -130,51 +100,6 @@ export default function VideoFeed() {
   const goPrev = () =>
     setIndex((c) => (c - 1 + videos.length) % videos.length);
   const goNext = () => setIndex((c) => (c + 1) % videos.length);
-
-  async function toggleLike(ownerId: string) {
-    if (!ownerId || ownerId === userId || likingIds.has(ownerId)) {
-      return;
-    }
-
-    const willLike = !likedIds.has(ownerId);
-
-    setLikingIds((current) => new Set(current).add(ownerId));
-    setLikedIds((current) => {
-      const next = new Set(current);
-      if (willLike) {
-        next.add(ownerId);
-      } else {
-        next.delete(ownerId);
-      }
-      return next;
-    });
-
-    try {
-      const response = await fetch(`/api/user/${ownerId}/like`, {
-        method: willLike ? "POST" : "DELETE",
-      });
-      if (!response.ok) {
-        throw new Error("like failed");
-      }
-    } catch {
-      setLikedIds((current) => {
-        const next = new Set(current);
-        if (willLike) {
-          next.delete(ownerId);
-        } else {
-          next.add(ownerId);
-        }
-        return next;
-      });
-      showError("Impossible d'enregistrer le like.", "Action échouée");
-    } finally {
-      setLikingIds((current) => {
-        const next = new Set(current);
-        next.delete(ownerId);
-        return next;
-      });
-    }
-  }
 
   return (
     <div className="flex w-full items-center justify-center gap-4">
@@ -225,26 +150,6 @@ export default function VideoFeed() {
               )}
             </div>
           )}
-
-          {current && current.userId && current.userId !== userId && (
-            <div className="absolute inset-y-0 right-4 flex flex-col justify-center items-center gap-5 text-texte-inverse">
-              <FeedAction
-                label=""
-                ariaLabel={
-                  likedIds.has(current.userId) ? "Je n'aime plus" : "J'aime"
-                }
-                onClick={() => toggleLike(current.userId)}
-                disabled={likingIds.has(current.userId)}
-              >
-                <HeartIcon
-                  className={`size-8 ${
-                    likedIds.has(current.userId) ? "text-erreur" : ""
-                  }`}
-                  filled={likedIds.has(current.userId)}
-                />
-              </FeedAction>
-            </div>
-          )}
         </div>
 
         {hasVideos && (
@@ -272,35 +177,6 @@ function FeedArrow({ ariaLabel, onClick, children }: FeedArrowProps) {
       className="flex size-10 items-center justify-center rounded-full border border-bordure-defaut bg-fond-page text-texte-secondaire shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] transition-colors hover:bg-fond-neutre hover:text-texte-principal"
     >
       {children}
-    </button>
-  );
-}
-
-type FeedActionProps = {
-  label: string;
-  ariaLabel: string;
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-};
-
-function FeedAction({
-  label,
-  ariaLabel,
-  children,
-  onClick,
-  disabled,
-}: FeedActionProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex flex-col items-center gap-1 drop-shadow-[1px_1px_0_rgba(0,0,0,0.3)] transition-transform enabled:hover:scale-110 disabled:opacity-70"
-      aria-label={ariaLabel}
-    >
-      {children}
-      <span className="font-sans text-[13px] font-medium">{label}</span>
     </button>
   );
 }

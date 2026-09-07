@@ -21,7 +21,7 @@ export default function GlobalError({ reset }: { reset: () => void }) {
         </main>
         <footer className="border-t border-neutral-200 px-4 py-3 text-center">
           <p className="text-xs text-neutral-500">
-            Démonstrateur technique, ne constitue pas un service public en exploitation.
+          Aucune donnée de ce service n'est utilisée pour déterminer vos droits ni le montant de vos allocations
           </p>
         </footer>
       </body>
