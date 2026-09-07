@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/toast";
 import SiteFooter from "@/components/site-footer";
+import CandidateNotice from "@/components/candidate-notice";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-fond-page font-sans text-texte-principal">
+        <CandidateNotice />
         <ToastProvider>
           <div className="flex flex-1 flex-col">{children}</div>
         </ToastProvider>
