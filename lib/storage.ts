@@ -50,7 +50,7 @@ export class UnsupportedMediaTypeError extends Error {}
 export class InvalidSourceUrlError extends Error {}
 export class SourceFetchFailedError extends Error {}
 
-async function persistBuffer(
+export async function persistBuffer(
   bytes: Buffer,
   mimeType: string,
   kind: MediaKind,
@@ -76,12 +76,15 @@ export async function saveUploadedFile(
   return persistBuffer(Buffer.from(await file.arrayBuffer()), file.type, kind);
 }
 
-export async function saveFileFromUrl(
+/**
+ * Downloads a remote file and validates its size/type, without persisting it anywhere.
+ * Shared by the image upload-from-url flow and any video provider's own from-url path.
+ */
+export async function fetchRemoteMedia(
   sourceUrl: string,
-  kind: MediaKind,
   maxSizeBytes: number,
   allowedMimeTypes: string[],
-): Promise<{ filename: string; url: string }> {
+): Promise<{ bytes: Buffer; mimeType: string }> {
   let parsed: URL;
   try {
     parsed = new URL(sourceUrl);
@@ -126,7 +129,17 @@ export async function saveFileFromUrl(
     chunks.push(value);
   }
 
-  return persistBuffer(Buffer.concat(chunks), mimeType, kind);
+  return { bytes: Buffer.concat(chunks), mimeType };
+}
+
+export async function saveFileFromUrl(
+  sourceUrl: string,
+  kind: MediaKind,
+  maxSizeBytes: number,
+  allowedMimeTypes: string[],
+): Promise<{ filename: string; url: string }> {
+  const { bytes, mimeType } = await fetchRemoteMedia(sourceUrl, maxSizeBytes, allowedMimeTypes);
+  return persistBuffer(bytes, mimeType, kind);
 }
 
 export async function deleteUploadedFileByUrl(url: string | null | undefined) {
