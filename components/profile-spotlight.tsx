@@ -37,7 +37,11 @@ export default function ProfileSpotlight() {
 
       {isRecruteur && (
         <Link
-          href="/messages"
+          href={
+            profile?.userId
+              ? `/messages/${profile.userId}?name=${encodeURIComponent(profile.name)}`
+              : "/messages"
+          }
           className="flex w-full items-center justify-center gap-1 overflow-hidden rounded-lg bg-fond-page p-2 shadow-[0px_1px_2px_0px_rgba(10,13,20,0.03)] outline outline-1 -outline-offset-1 outline-bordure-defaut transition-colors hover:bg-fond-neutre"
         >
           <span className="px-1 font-sans text-sm font-medium leading-5 text-texte-secondaire">
@@ -59,8 +63,6 @@ export default function ProfileSpotlight() {
   );
 }
 
-// Ligne de statistique du panneau candidat : intitulé, valeur et évolution par
-// rapport à la période précédente.
 function Statistic({
   label,
   value,

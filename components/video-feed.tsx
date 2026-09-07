@@ -99,15 +99,15 @@ export default function VideoFeed() {
   const current = hasVideos ? videos[index] : null;
 
   useEffect(() => {
-    setProfile(current ? { name: current.name } : null);
+    setProfile(
+      current ? { name: current.name, userId: current.userId } : null,
+    );
   }, [current, setProfile]);
 
   const goPrev = () =>
     setIndex((c) => (c - 1 + videos.length) % videos.length);
   const goNext = () => setIndex((c) => (c + 1) % videos.length);
 
-  // Like / unlike du profil propriétaire de la vidéo. Mise à jour optimiste :
-  // on bascule l'état tout de suite, puis on revient en arrière si l'API échoue.
   async function toggleLike(ownerId: string) {
     if (!ownerId || ownerId === userId || likingIds.has(ownerId)) {
       return;
@@ -134,7 +134,6 @@ export default function VideoFeed() {
         throw new Error("like failed");
       }
     } catch {
-      // Échec réseau/serveur : on rétablit l'état précédent.
       setLikedIds((current) => {
         const next = new Set(current);
         if (willLike) {

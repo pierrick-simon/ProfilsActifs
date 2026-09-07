@@ -1,5 +1,10 @@
-import ChatConversation from "@/components/chat-conversation";
+import MessagesContacts from "@/components/messages-contacts";
+import RequireRegistration from "@/components/require-registration";
 
 export default function MessagesPage() {
-  return <ChatConversation />;
+  return (
+    <RequireRegistration>
+      <MessagesContacts />
+    </RequireRegistration>
+  );
 }
