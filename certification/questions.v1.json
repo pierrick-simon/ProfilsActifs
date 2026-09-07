@@ -1,0 +1,73 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Quelle est la capitale de la France ?",
+      "type": "single-choice",
+      "options": {
+        "choices": [
+          "Berlin",
+          "Madrid",
+          "Paris",
+          "Rome"
+        ],
+        "answer": "Paris"
+      },
+      "weight": 1
+    },
+    {
+      "id": 2,
+      "question": "Est-ce vrai ?",
+      "type": "true-false",
+      "options": {
+        "answer": true
+      },
+      "weight": 1
+    },
+    {
+      "id": 3,
+      "question": "Que pensez-vous de l'océan pacifique ?",
+      "type": "free-answer",
+      "options": {
+        "answer": null
+      },
+      "weight": 1
+    },
+    {
+      "id": 4,
+      "question": "Quel jour l'an 2000 a-t-il eu lieu ?",
+      "type": "date",
+      "options": {
+        "answer": "01-01-2000"
+      },
+      "weight": 1
+    },
+    {
+      "id": 5,
+      "question": "Quels chiffres sont strictement positifs ?",
+      "type": "multiple-choice",
+      "options": {
+        "choices": [
+          "-5",
+          "3",
+          "0",
+          "27"
+        ],
+        "answer": [
+          "3",
+          "27"
+        ]
+      },
+      "weight": 1
+    },
+    {
+      "id": 6,
+      "question": "Combien font 66 + 44 ?",
+      "type": "numeric",
+      "options": {
+        "answer": 110
+      },
+      "weight": 1
+    }
+  ]
+}
