@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { decodeCursor, encodeCursor, DecodedCursor } from "@/lib/cursor";
 import { getAgeGatedWhereClause } from "@/lib/age-gate";
+import { resolveVideoPlayback } from "@/lib/videos";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -102,18 +103,26 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const resolvedVideos = await Promise.all(
+    returnedVideos.map(async (v) => {
+      const playback = await resolveVideoPlayback(v);
+      return {
+        id: v.id,
+        created_at: v.createdAt.toISOString(),
+        video_url: playback.url,
+        video_status: playback.status,
+        thumbnail_url: "",
+        caption: "",
+        user_id: v.userId,
+        like_count: 0,
+        comment_count: 0,
+        is_profile_liked: likedProfileIds.has(v.userId),
+      };
+    }),
+  );
+
   const responseBody = {
-    videos: returnedVideos.map((v) => ({
-      id: v.id,
-      created_at: v.createdAt.toISOString(),
-      video_url: v.url,
-      thumbnail_url: "",
-      caption: "",
-      user_id: v.userId,
-      like_count: 0,
-      comment_count: 0,
-      is_profile_liked: likedProfileIds.has(v.userId),
-    })),
+    videos: resolvedVideos,
     next_cursor: nextCursor,
     has_more: hasMore,
   };
