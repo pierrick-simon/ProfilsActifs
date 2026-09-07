@@ -31,8 +31,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 3. Authenticate and retrieve user role
+  // 3. Authenticate and retrieve user role + id
   let isRecruiter = false;
+  let viewerId: string | null = null;
   try {
     const session = await auth.api.getSession({
       headers: request.headers,
@@ -40,9 +41,11 @@ export async function GET(request: NextRequest) {
     if (session?.user?.role === "recruiter") {
       isRecruiter = true;
     }
+    viewerId = session?.user?.id ?? null;
   } catch {
     // Unauthenticated or session lookup failure defaults to non-recruiter
     isRecruiter = false;
+    viewerId = null;
   }
 
   // 4. Build query filters
@@ -83,6 +86,22 @@ export async function GET(request: NextRequest) {
         })
       : null;
 
+  // 6. Check which of the returned videos' profiles the viewer already likes
+  let likedProfileIds = new Set<string>();
+  if (viewerId) {
+    const profileIds = Array.from(new Set(returnedVideos.map((v) => v.userId)));
+    if (profileIds.length > 0) {
+      const likes = await prisma.like.findMany({
+        where: {
+          likerUserId: viewerId,
+          likedUserId: { in: profileIds },
+        },
+        select: { likedUserId: true },
+      });
+      likedProfileIds = new Set(likes.map((l) => l.likedUserId));
+    }
+  }
+
   const responseBody = {
     videos: returnedVideos.map((v) => ({
       id: v.id,
@@ -93,6 +112,7 @@ export async function GET(request: NextRequest) {
       user_id: v.userId,
       like_count: 0,
       comment_count: 0,
+      is_profile_liked: likedProfileIds.has(v.userId),
     })),
     next_cursor: nextCursor,
     has_more: hasMore,
