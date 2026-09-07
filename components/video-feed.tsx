@@ -35,7 +35,6 @@ export default function VideoFeed() {
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
-  // Profils « likés » par l'utilisateur courant, et likes en cours d'envoi.
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
 
@@ -78,6 +77,30 @@ export default function VideoFeed() {
 
         if (active) {
           setVideos(list);
+        }
+
+        if (isRecruteur) {
+          try {
+            const feedResponse = await fetch("/api/feed?limit=50");
+            if (feedResponse.ok) {
+              const feedData = await feedResponse.json();
+              const liked = new Set<string>(
+                (Array.isArray(feedData.videos)
+                  ? (feedData.videos as {
+                      user_id: string;
+                      is_profile_liked?: boolean;
+                    }[])
+                  : []
+                )
+                  .filter((v) => v.is_profile_liked)
+                  .map((v) => v.user_id),
+              );
+              if (active) {
+                setLikedIds(liked);
+              }
+            }
+          } catch {
+          }
         }
       } catch {
         if (active) {
