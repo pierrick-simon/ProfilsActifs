@@ -5,12 +5,14 @@ import { prisma } from "@/lib/db";
 import {
   ALLOWED_VIDEO_MIME_TYPES,
   FileTooLargeError,
+  fetchRemoteMedia,
   InvalidSourceUrlError,
   MAX_VIDEO_SIZE_BYTES,
-  saveFileFromUrl,
   SourceFetchFailedError,
   UnsupportedMediaTypeError,
 } from "@/lib/storage";
+import { getActiveVideoProvider } from "@/lib/video-provider";
+import { resolveVideoPlayback } from "@/lib/videos";
 
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -25,24 +27,33 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { url } = await saveFileFromUrl(
+    const { bytes, mimeType } = await fetchRemoteMedia(
       sourceUrl,
-      "videos",
       MAX_VIDEO_SIZE_BYTES,
       ALLOWED_VIDEO_MIME_TYPES,
     );
 
+    const provider = getActiveVideoProvider();
+    const providerId = await provider.store({ bytes, mimeType });
+    const initialStatus = await provider.status(providerId);
+
     const video = await prisma.video.create({
       data: {
         id: randomUUID(),
-        url,
+        provider: provider.name,
+        providerId,
+        status: initialStatus.status.toUpperCase() as "PENDING" | "READY" | "FAILED",
         userId: session.user.id,
         views: 0,
         validated: false,
       },
     });
 
-    return NextResponse.json(video, { status: 201 });
+    const playback = await resolveVideoPlayback(video);
+    return NextResponse.json(
+      { ...video, url: playback.url, status: playback.status },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof FileTooLargeError) {
       return NextResponse.json({ error: "Video exceeds the 100MB size limit" }, { status: 413 });

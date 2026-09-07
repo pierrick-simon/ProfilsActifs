@@ -3,12 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { fileTypeFromBuffer } from "file-type";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import {
-  ALLOWED_VIDEO_MIME_TYPES,
-  extensionForMimeType,
-  MAX_VIDEO_SIZE_BYTES,
-  saveUploadedFile,
-} from "@/lib/storage";
+import { ALLOWED_VIDEO_MIME_TYPES, extensionForMimeType, MAX_VIDEO_SIZE_BYTES } from "@/lib/storage";
+import { getActiveVideoProvider } from "@/lib/video-provider";
+import { resolveVideoPlayback } from "@/lib/videos";
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -38,7 +35,9 @@ export async function GET(request: NextRequest) {
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: {
       id: true,
-      url: true,
+      provider: true,
+      providerId: true,
+      status: true,
       views: true,
       validated: true,
       userId: true,
@@ -49,8 +48,18 @@ export async function GET(request: NextRequest) {
   const hasMore = videos.length > limit;
   const items = hasMore ? videos.slice(0, limit) : videos;
 
+  // Playback URL/status is resolved live against each video's own provider rather than
+  // trusted verbatim from the row, so a provider outage degrades the response instead of
+  // serving a stale "ready" that would then fail client-side.
+  const resolvedItems = await Promise.all(
+    items.map(async ({ provider, providerId, status, ...rest }) => {
+      const playback = await resolveVideoPlayback({ provider, providerId, status });
+      return { ...rest, url: playback.url, status: playback.status };
+    }),
+  );
+
   return NextResponse.json({
-    items,
+    items: resolvedItems,
     nextCursor: hasMore ? items[items.length - 1].id : null,
   });
 }
@@ -64,8 +73,8 @@ export async function POST(request: NextRequest) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > MAX_VIDEO_SIZE_BYTES) {
     return NextResponse.json(
-        { error: "La vidéo dépasse la limite de taille de 100 Mo" },
-        { status: 413 },
+      { error: "La vidéo dépasse la limite de taille de 100 Mo" },
+      { status: 413 },
     );
   }
 
@@ -78,8 +87,8 @@ export async function POST(request: NextRequest) {
 
   if (file.size > MAX_VIDEO_SIZE_BYTES) {
     return NextResponse.json(
-        { error: "La vidéo dépasse la limite de taille de 100 Mo" },
-        { status: 413 },
+      { error: "La vidéo dépasse la limite de taille de 100 Mo" },
+      { status: 413 },
     );
   }
 
@@ -94,29 +103,35 @@ export async function POST(request: NextRequest) {
 
   if (!detected || !ALLOWED_VIDEO_MIME_TYPES.includes(detected.mime)) {
     return NextResponse.json(
-        { error: "Le contenu du fichier ne correspond à aucun type de vidéo autorisé" },
-        { status: 415 },
+      { error: "Le contenu du fichier ne correspond à aucun type de vidéo autorisé" },
+      { status: 415 },
     );
   }
 
-  const detectedExtension = extensionForMimeType(detected.mime);
-  if (!detectedExtension) {
+  if (!extensionForMimeType(detected.mime)) {
     return NextResponse.json({ error: "Type de vidéo non pris en charge" }, { status: 415 });
   }
 
-  // On repasse le fichier original par référence, sans le recharger entièrement en mémoire
-  const validatedFile = new File([file], file.name, { type: detected.mime });
-  const { url } = await saveUploadedFile(validatedFile, "videos");
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const provider = getActiveVideoProvider();
+  const providerId = await provider.store({ bytes, mimeType: detected.mime });
+  const initialStatus = await provider.status(providerId);
 
   const video = await prisma.video.create({
     data: {
       id: randomUUID(),
-      url,
+      provider: provider.name,
+      providerId,
+      status: initialStatus.status.toUpperCase() as "PENDING" | "READY" | "FAILED",
       userId: session.user.id,
       views: 0,
       validated: false,
     },
   });
 
-  return NextResponse.json(video, { status: 201 });
+  const playback = await resolveVideoPlayback(video);
+  return NextResponse.json(
+    { ...video, url: playback.url, status: playback.status },
+    { status: 201 },
+  );
 }
