@@ -1,0 +1,191 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Quelle est la capitale de l'Italie ?",
+      "type": "single-choice",
+      "options": {
+        "choices": ["Rome", "Milan", "Naples", "Turin"],
+        "answer": "Rome"
+      },
+      "weight": 1
+    },
+    {
+      "id": 2,
+      "question": "Le soleil est une étoile.",
+      "type": "true-false",
+      "options": {
+        "answer": true
+      },
+      "weight": 1
+    },
+    {
+      "id": 3,
+      "question": "Quel est votre avis sur le télétravail ?",
+      "type": "free-answer",
+      "options": {
+        "answer": null
+      },
+      "weight": 1
+    },
+    {
+      "id": 4,
+      "question": "À quelle date la Révolution française a-t-elle commencé (prise de la Bastille) ?",
+      "type": "date",
+      "options": {
+        "answer": "14-07-1789"
+      },
+      "weight": 2
+    },
+    {
+      "id": 5,
+      "question": "Quels sont des langages de programmation orientés objet ?",
+      "type": "multiple-choice",
+      "options": {
+        "choices": ["Java", "HTML", "Python", "CSS"],
+        "answer": ["Java", "Python"]
+      },
+      "weight": 2
+    },
+    {
+      "id": 6,
+      "question": "Combien font 15 x 12 ?",
+      "type": "numeric",
+      "options": {
+        "answer": 180
+      },
+      "weight": 1
+    },
+    {
+      "id": 7,
+      "question": "Quelle planète est surnommée la planète rouge ?",
+      "type": "single-choice",
+      "options": {
+        "choices": ["Vénus", "Mars", "Jupiter", "Saturne"],
+        "answer": "Mars"
+      },
+      "weight": 1
+    },
+    {
+      "id": 8,
+      "question": "L'eau bout à 100 degrés Celsius au niveau de la mer.",
+      "type": "true-false",
+      "options": {
+        "answer": true
+      },
+      "weight": 1
+    },
+    {
+      "id": 9,
+      "question": "Décrivez un défi professionnel que vous avez récemment surmonté.",
+      "type": "free-answer",
+      "options": {
+        "answer": null
+      },
+      "weight": 1
+    },
+    {
+      "id": 10,
+      "question": "Quelle est la date de la signature de l'armistice mettant fin à la Première Guerre mondiale ?",
+      "type": "date",
+      "options": {
+        "answer": "11-11-1918"
+      },
+      "weight": 2
+    },
+    {
+      "id": 11,
+      "question": "Quels sont des fruits parmi cette liste ?",
+      "type": "multiple-choice",
+      "options": {
+        "choices": ["Pomme", "Carotte", "Banane", "Pomme de terre"],
+        "answer": ["Pomme", "Banane"]
+      },
+      "weight": 1
+    },
+    {
+      "id": 12,
+      "question": "Combien y a-t-il de continents sur Terre ?",
+      "type": "numeric",
+      "options": {
+        "answer": 7
+      },
+      "weight": 1
+    },
+    {
+      "id": 13,
+      "question": "Quel est l'élément chimique dont le symbole est 'O' ?",
+      "type": "single-choice",
+      "options": {
+        "choices": ["Or", "Oxygène", "Osmium", "Ozone"],
+        "answer": "Oxygène"
+      },
+      "weight": 1
+    },
+    {
+      "id": 14,
+      "question": "Python est un langage compilé.",
+      "type": "true-false",
+      "options": {
+        "answer": false
+      },
+      "weight": 1
+    },
+    {
+      "id": 15,
+      "question": "Quelles sont, selon vous, les qualités essentielles d'un bon manager ?",
+      "type": "free-answer",
+      "options": {
+        "answer": null
+      },
+      "weight": 1
+    },
+    {
+      "id": 16,
+      "question": "Quelle est la date du premier pas de l'homme sur la Lune ?",
+      "type": "date",
+      "options": {
+        "answer": "20-07-1969"
+      },
+      "weight": 2
+    },
+    {
+      "id": 17,
+      "question": "Quels sont des systèmes d'exploitation ?",
+      "type": "multiple-choice",
+      "options": {
+        "choices": ["Windows", "Chrome", "Linux", "Excel"],
+        "answer": ["Windows", "Linux"]
+      },
+      "weight": 2
+    },
+    {
+      "id": 18,
+      "question": "Quelle est la racine carrée de 144 ?",
+      "type": "numeric",
+      "options": {
+        "answer": 12
+      },
+      "weight": 1
+    },
+    {
+      "id": 19,
+      "question": "Quel océan est le plus grand du monde ?",
+      "type": "single-choice",
+      "options": {
+        "choices": ["Atlantique", "Indien", "Pacifique", "Arctique"],
+        "answer": "Pacifique"
+      },
+      "weight": 1
+    },
+    {
+      "id": 20,
+      "question": "Le Mont Blanc est le plus haut sommet d'Europe occidentale.",
+      "type": "true-false",
+      "options": {
+        "answer": true
+      },
+      "weight": 1
+    }
+  ]
+}

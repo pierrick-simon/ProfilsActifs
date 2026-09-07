@@ -74,29 +74,14 @@ enum FieldType {
   DATE
 }
 
-model question {
-  id           String         @id
-  name         String         @unique
-  type         FieldType
-  required     Boolean
-  options      Json?
-  order        Int?
-  createdAt    DateTime       @db.Timestamptz(6)
-  updatedAt    DateTime       @db.Timestamptz(6)
-  archived     Boolean        @default(false)
-  formResponse formResponse[]
-}
-
 model formResponse {
-  id         String   @id
-  userId     String
-  questionId String
-  response   Json
-  createdAt  DateTime @db.Timestamptz(6)
-  updatedAt  DateTime @db.Timestamptz(6)
-  archived   Boolean  @default(false)
-  question   question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  user       user     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id            String   @id
+  userId        String
+  questionId    String
+  response      Json
+  createdAt     DateTime @db.Timestamptz(6)
+  formVersionId Int
+  user          user     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId])
   @@index([questionId])
