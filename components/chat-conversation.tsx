@@ -2,47 +2,147 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ArrowUpIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   PlusIcon,
 } from "@/components/icons";
+import { useToast } from "@/components/toast";
 
-type Message = {
-  id: number;
-  author: "contact" | "moi";
-  text: string;
+type ChatMessage = {
+  id: string;
+  content: string;
+  isMine: boolean;
 };
 
-const initialMessages: Message[] = [
-  { id: 1, author: "contact", text: "Bonjour ! Comment puis-je vous aider aujourd'hui ?" },
-  { id: 2, author: "moi", text: "Bonjour, j'ai une question à propos de l'offre." },
-  { id: 3, author: "contact", text: "Bien sûr, je vous écoute." },
-];
+type ApiMessage = {
+  id: string;
+  content: string;
+  is_mine: boolean;
+};
 
-export default function ChatConversation() {
+type ApiContact = {
+  id: string;
+  name: string | null;
+  image: string | null;
+};
+
+export default function ChatConversation({
+  contactId,
+  contactName,
+}: {
+  contactId: string;
+  contactName?: string;
+}) {
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const { showError } = useToast();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [name, setName] = useState(contactName ?? "Conversation");
+  const [image, setImage] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/messages/${contactId}?limit=30`);
+        if (!response.ok) {
+          throw new Error("conversation unavailable");
+        }
+        const data = await response.json();
+        const list: ChatMessage[] = (
+          Array.isArray(data.messages) ? (data.messages as ApiMessage[]) : []
+        )
+          .map((m) => ({ id: m.id, content: m.content, isMine: m.is_mine }))
+          .reverse();
+        if (active) {
+          setMessages(list);
+        }
+      } catch {
+        if (active) {
+          showError("Impossible de charger la conversation.", "Messages indisponibles");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+    load();
+    return () => {
+      active = false;
+    };
+  }, [contactId, showError]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadContact() {
+      try {
+        const response = await fetch("/api/messages/contacts");
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        const contacts: ApiContact[] = Array.isArray(data.contacts)
+          ? data.contacts
+          : [];
+        const match = contacts.find((c) => c.id === contactId);
+        if (active && match) {
+          if (match.name) {
+            setName(match.name);
+          }
+          setImage(match.image ?? null);
+        }
+      } catch {
+      }
+    }
+    loadContact();
+    return () => {
+      active = false;
+    };
+  }, [contactId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function sendMessage(event: React.FormEvent) {
+  async function sendMessage(event: React.FormEvent) {
     event.preventDefault();
     const text = draft.trim();
-    if (!text) {
+    if (!text || sending) {
       return;
     }
-    setMessages((current) => [
-      ...current,
-      { id: current.length + 1, author: "moi", text },
-    ]);
-    setDraft("");
+
+    setSending(true);
+    try {
+      const response = await fetch(`/api/messages/${contactId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: text }),
+      });
+      if (!response.ok) {
+        throw new Error("send failed");
+      }
+      const created: ApiMessage = await response.json();
+      setMessages((current) => [
+        ...current,
+        { id: created.id, content: created.content, isMine: true },
+      ]);
+      setDraft("");
+    } catch {
+      showError("Votre message n'a pas pu être envoyé.", "Envoi échoué");
+    } finally {
+      setSending(false);
+    }
   }
+
+  const initial = name.charAt(0).toUpperCase();
 
   return (
     <main className="flex flex-1 justify-center bg-fond-page md:bg-fond-neutre md:p-4 lg:p-6">
@@ -50,18 +150,31 @@ export default function ChatConversation() {
         <header className="flex items-center gap-3.5 border-b border-bordure-defaut px-4 py-3">
           <button
             type="button"
-            aria-label="Retour au fil"
-            onClick={() => router.push("/")}
+            aria-label="Retour aux messages"
+            onClick={() => router.push("/messages")}
             className="flex size-9 items-center justify-center rounded-lg text-bleu-institutionnel transition-colors hover:bg-fond-neutre"
           >
             <ChevronLeftIcon className="size-5" />
           </button>
+          <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-fond-bleu-clair font-sans text-sm font-medium text-bleu-institutionnel">
+            {image ? (
+              <Image
+                src={image}
+                alt=""
+                width={36}
+                height={36}
+                className="size-full object-cover"
+              />
+            ) : (
+              initial
+            )}
+          </span>
           <div className="flex flex-1 flex-col">
             <span className="font-sans text-lg font-medium leading-tight text-texte-principal">
-              Camille Rousseau
+              {name}
             </span>
             <span className="font-sans text-sm text-texte-tertiaire">
-              Recruteuse · ProfilsActifs
+              ProfilsActifs
             </span>
           </div>
           <button
@@ -74,22 +187,32 @@ export default function ChatConversation() {
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col justify-end gap-5 overflow-y-auto px-5 py-4">
-          {messages.map((message) =>
-            message.author === "contact" ? (
-              <p
-                key={message.id}
-                className="max-w-[85%] self-start px-1 font-sans text-base leading-snug text-texte-principal"
-              >
-                {message.text}
-              </p>
-            ) : (
-              <p
-                key={message.id}
-                className="max-w-[85%] self-end rounded-[14px_14px_8px_14px] bg-fond-neutre px-3.5 py-2.5 font-sans text-base leading-snug text-texte-principal"
-              >
-                {message.text}
-              </p>
-            ),
+          {loading ? (
+            <p className="self-center font-sans text-sm text-texte-tertiaire">
+              Chargement de la conversation...
+            </p>
+          ) : messages.length === 0 ? (
+            <p className="self-center font-sans text-sm text-texte-tertiaire">
+              Aucun message. Écrivez le premier !
+            </p>
+          ) : (
+            messages.map((message) =>
+              message.isMine ? (
+                <p
+                  key={message.id}
+                  className="max-w-[85%] self-end rounded-[14px_14px_8px_14px] bg-fond-neutre px-3.5 py-2.5 font-sans text-base leading-snug text-texte-principal"
+                >
+                  {message.content}
+                </p>
+              ) : (
+                <p
+                  key={message.id}
+                  className="max-w-[85%] self-start px-1 font-sans text-base leading-snug text-texte-principal"
+                >
+                  {message.content}
+                </p>
+              ),
+            )
           )}
           <div ref={bottomRef} />
         </div>
@@ -115,7 +238,7 @@ export default function ChatConversation() {
                 <button
                   type="submit"
                   aria-label="Envoyer"
-                  disabled={!draft.trim()}
+                  disabled={!draft.trim() || sending}
                   className="flex size-8 items-center justify-center rounded-lg bg-bleu-institutionnel text-texte-inverse transition-colors hover:bg-bleu-institutionnel/90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-bleu-institutionnel"
                 >
                   <ArrowUpIcon className="size-4" />

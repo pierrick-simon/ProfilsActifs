@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState } from "react";
 
-type Profile = { name: string } | null;
+type Profile = { name: string; userId?: string } | null;
 
 type CurrentProfileValue = {
   profile: Profile;
