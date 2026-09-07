@@ -7,7 +7,9 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "vitest run",
+    "migrate:video-storage": "tsx scripts/migrate-video-storage.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
@@ -33,7 +35,9 @@
     "eslint-config-next": "16.3.3",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.13",
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "swagger-ui-react": {
