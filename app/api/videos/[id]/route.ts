@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { deleteVideoRecord, resolveVideoPlayback } from "@/lib/videos";
 
 export async function PATCH(
   request: NextRequest,
@@ -26,7 +27,9 @@ export async function PATCH(
       data: { validated: body.validated },
       select: {
         id: true,
-        url: true,
+        provider: true,
+        providerId: true,
+        status: true,
         views: true,
         validated: true,
         userId: true,
@@ -39,5 +42,32 @@ export async function PATCH(
     return NextResponse.json({ error: "Video not found" }, { status: 404 });
   }
 
-  return NextResponse.json(video);
+  const { provider, providerId, status, ...rest } = video;
+  const playback = await resolveVideoPlayback({ provider, providerId, status });
+  return NextResponse.json({ ...rest, url: playback.url, status: playback.status });
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const video = await prisma.video.findUnique({ where: { id }, select: { userId: true } });
+  if (!video) {
+    return NextResponse.json({ error: "Video not found" }, { status: 404 });
+  }
+
+  const isOwner = video.userId === session.user.id;
+  const isAdmin = session.user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await deleteVideoRecord(id);
+  return new NextResponse(null, { status: 204 });
 }
