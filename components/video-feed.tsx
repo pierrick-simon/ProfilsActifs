@@ -16,12 +16,14 @@ type FeedVideo = {
   id: string;
   video_url: string;
   name: string;
+  userId: string;
 };
 
 type VideoItem = {
   id: string;
   url: string;
-  user?: { name?: string | null } | null;
+  userId?: string;
+  user?: { id?: string | null; name?: string | null } | null;
 };
 
 export default function VideoFeed() {
@@ -33,6 +35,9 @@ export default function VideoFeed() {
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
+  // Profils « likés » par l'utilisateur courant, et likes en cours d'envoi.
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isPending) {
@@ -68,6 +73,7 @@ export default function VideoFeed() {
           id: v.id,
           video_url: v.url,
           name: v.user?.name ?? "",
+          userId: v.userId ?? v.user?.id ?? "",
         }));
 
         if (active) {
@@ -99,6 +105,54 @@ export default function VideoFeed() {
   const goPrev = () =>
     setIndex((c) => (c - 1 + videos.length) % videos.length);
   const goNext = () => setIndex((c) => (c + 1) % videos.length);
+
+  // Like / unlike du profil propriétaire de la vidéo. Mise à jour optimiste :
+  // on bascule l'état tout de suite, puis on revient en arrière si l'API échoue.
+  async function toggleLike(ownerId: string) {
+    if (!ownerId || ownerId === userId || likingIds.has(ownerId)) {
+      return;
+    }
+
+    const willLike = !likedIds.has(ownerId);
+
+    setLikingIds((current) => new Set(current).add(ownerId));
+    setLikedIds((current) => {
+      const next = new Set(current);
+      if (willLike) {
+        next.add(ownerId);
+      } else {
+        next.delete(ownerId);
+      }
+      return next;
+    });
+
+    try {
+      const response = await fetch(`/api/user/${ownerId}/like`, {
+        method: willLike ? "POST" : "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("like failed");
+      }
+    } catch {
+      // Échec réseau/serveur : on rétablit l'état précédent.
+      setLikedIds((current) => {
+        const next = new Set(current);
+        if (willLike) {
+          next.delete(ownerId);
+        } else {
+          next.add(ownerId);
+        }
+        return next;
+      });
+      showError("Impossible d'enregistrer le like.", "Action échouée");
+    } finally {
+      setLikingIds((current) => {
+        const next = new Set(current);
+        next.delete(ownerId);
+        return next;
+      });
+    }
+  }
 
   return (
     <div className="flex w-full items-center justify-center gap-4">
@@ -150,10 +204,22 @@ export default function VideoFeed() {
             </div>
           )}
 
-          {current && (
+          {current && current.userId && current.userId !== userId && (
             <div className="absolute inset-y-0 right-4 flex flex-col justify-center items-center gap-5 text-texte-inverse">
-              <FeedAction label="" ariaLabel="J'aime">
-                <HeartIcon className="size-8" filled />
+              <FeedAction
+                label=""
+                ariaLabel={
+                  likedIds.has(current.userId) ? "Je n'aime plus" : "J'aime"
+                }
+                onClick={() => toggleLike(current.userId)}
+                disabled={likingIds.has(current.userId)}
+              >
+                <HeartIcon
+                  className={`size-8 ${
+                    likedIds.has(current.userId) ? "text-erreur" : ""
+                  }`}
+                  filled={likedIds.has(current.userId)}
+                />
               </FeedAction>
             </div>
           )}
@@ -192,13 +258,23 @@ type FeedActionProps = {
   label: string;
   ariaLabel: string;
   children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
 };
 
-function FeedAction({ label, ariaLabel, children }: FeedActionProps) {
+function FeedAction({
+  label,
+  ariaLabel,
+  children,
+  onClick,
+  disabled,
+}: FeedActionProps) {
   return (
     <button
       type="button"
-      className="flex flex-col items-center gap-1 drop-shadow-[1px_1px_0_rgba(0,0,0,0.3)]"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-col items-center gap-1 drop-shadow-[1px_1px_0_rgba(0,0,0,0.3)] transition-transform enabled:hover:scale-110 disabled:opacity-70"
       aria-label={ariaLabel}
     >
       {children}
