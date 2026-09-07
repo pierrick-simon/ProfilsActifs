@@ -49,7 +49,7 @@ export default function AdminPage() {
       <header className="px-6 py-6 md:px-10">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-bleu-institutionnel to-[#122368] text-texte-inverse shadow-sm">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-bleu-institutionnel to-[#5e1016] text-texte-inverse shadow-sm">
               <ShieldCheckIcon className="size-6" />
             </span>
             <div className="flex flex-col">

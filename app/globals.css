@@ -6,30 +6,32 @@
 @source "../lib";
 
 @theme {
-  /* Typographie : Marianne, police officielle imposée par la charte */
-  --font-sans: var(--font-marianne), ui-sans-serif, system-ui, sans-serif;
+  /* Typographie : Inter */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   /* Fonds */
   --color-fond-page: #ffffff;
-  --color-fond-neutre: #edeff3;
-  --color-fond-bleu-clair: #d5e2ff;
+  /* Gris neutre légèrement chaud (auparavant bleuté) */
+  --color-fond-neutre: #f1eef0;
+  /* Teinte claire de la couleur de marque (rouge brique) */
+  --color-fond-bleu-clair: #f7dfe1;
 
-  /* Marque et actions */
-  --color-bleu-institutionnel: #1b3a6b;
+  /* Marque et actions — couleur principale : rouge brique #8B1822 */
+  --color-bleu-institutionnel: #8b1822;
   --color-action-sur-blanc: #b75310;
   --color-action-sur-bleu: #FFC197;
 
   /* États */
   --color-erreur: #fb3748;
 
-  /* Textes */
-  --color-texte-principal: #14213d;
-  --color-texte-secondaire: #4a5468;
-  --color-texte-tertiaire: #667085;
+  /* Textes — neutres chauds, débarrassés de l'ancien cast bleu/ardoise */
+  --color-texte-principal: #1b1719;
+  --color-texte-secondaire: #524d51;
+  --color-texte-tertiaire: #767077;
   --color-texte-inverse: #ffffff;
   --color-texte-sur-action-clair: #96440d;
 
-  /* Bordures */
-  --color-bordure-defaut: #e3e6ec;
-  --color-bordure-forte: #8891a3;
+  /* Bordures — gris neutres (auparavant ardoise bleuté) */
+  --color-bordure-defaut: #e7e3e4;
+  --color-bordure-forte: #8d868b;
 }

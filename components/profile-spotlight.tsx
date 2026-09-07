@@ -55,7 +55,6 @@ export default function ProfileSpotlight() {
           <SegmentedControl options={["Mes statistiques"]} activeIndex={0} />
           <div className="flex w-full flex-col gap-4">
             <Statistic label="Vues" value="3 484" delta="+7,1 %" />
-            <Statistic label="J'aime" value="1 209" delta="+4,3 %" />
           </div>
         </div>
       )}
@@ -149,7 +148,7 @@ function CertificationMedal() {
         style={centered}
       />
       <div
-        className="absolute flex size-24 items-center justify-center overflow-hidden rounded-full border-4 border-[#122368] bg-fond-page"
+        className="absolute flex size-24 items-center justify-center overflow-hidden rounded-full border-4 border-[#5e1016] bg-fond-page"
         style={centered}
       >
         <div className="size-[72px] overflow-hidden rounded-full bg-fond-bleu-clair">
