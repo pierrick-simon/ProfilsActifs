@@ -149,7 +149,7 @@ function CertificationMedal() {
         style={centered}
       />
       <div
-        className="absolute flex size-24 items-center justify-center overflow-hidden rounded-full border-4 border-[#122368] bg-fond-page"
+        className="absolute flex size-24 items-center justify-center overflow-hidden rounded-full border-4 border-[#5e1016] bg-fond-page"
         style={centered}
       >
         <div className="size-[72px] overflow-hidden rounded-full bg-fond-bleu-clair">

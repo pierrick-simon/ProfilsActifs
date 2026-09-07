@@ -75,7 +75,7 @@ export default function AccountMenu() {
           <span className="truncate font-sans text-sm font-medium text-texte-principal">
             {name}
           </span>
-          <span className="flex size-3.5 shrink-0 items-center justify-center rounded-full bg-[#375DFB] text-texte-inverse">
+          <span className="flex size-3.5 shrink-0 items-center justify-center rounded-full bg-bleu-institutionnel text-texte-inverse">
             <CheckIcon className="size-2" />
           </span>
         </span>
