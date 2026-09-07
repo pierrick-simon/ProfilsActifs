@@ -1,8 +1,5 @@
 ### Form Version
-The questionnaire version is configured in the `.env` file. The file name must match the selected version, for example:
-
-- `.env`: `FORM_VERSION=v1`
-- file: `certification/questions.v1.json`
+The questionnaire version is the latest one. The file name must match the selected version, for example: `certification/questions.v1.json`
 
 The application will load the JSON file corresponding to the configured version.
 
