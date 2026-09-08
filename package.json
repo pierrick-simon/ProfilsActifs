@@ -10,6 +10,7 @@
     "postinstall": "prisma generate",
     "test": "vitest run",
     "migrate:video-storage": "tsx scripts/migrate-video-storage.ts",
+    "verify:catalog-order": "tsx scripts/verify-catalog-order.ts"
     "generate_profiles": "tsx scripts/generate_profiles.ts"
   },
   "dependencies": {
