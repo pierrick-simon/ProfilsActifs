@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRightIcon,
   CalendarIcon,
@@ -14,10 +14,13 @@ import {
   VideoIcon,
 } from "@/components/icons";
 import RejectVideoModal from "@/components/reject-video-modal";
-import UserTable from "@/components/user-table";
+import UserTable, { type ListedUser } from "@/components/user-table";
 import BackButton from "@/components/back-button";
 import RequireRegistration from "@/components/require-registration";
 import { useToast } from "@/components/toast";
+import { authClient } from "@/lib/auth_client";
+
+const STAT_DAYS = 7;
 
 type PendingVideo = {
   id: string;
@@ -30,7 +33,13 @@ type VideoItem = {
   id: string;
   url?: string | null;
   createdAt?: string;
-  user?: { name?: string | null } | null;
+  validated?: boolean;
+  userId?: string;
+  user?: {
+    id?: string | null;
+    name?: string | null;
+    localisation?: string | null;
+  } | null;
 };
 
 function formatSubmittedAt(iso?: string): string {
@@ -59,6 +68,134 @@ function formatSubmittedAt(iso?: string): string {
   return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
+function startOfDay(date: Date): Date {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function statWindow(now = new Date()) {
+  const start = startOfDay(now);
+  start.setDate(start.getDate() - (STAT_DAYS - 1));
+  const prevStart = new Date(start);
+  prevStart.setDate(prevStart.getDate() - STAT_DAYS);
+  return { start, end: now, prevStart, prevEnd: start };
+}
+
+function formatRange(start: Date, end: Date): string {
+  const options: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+  };
+  return `${start.toLocaleDateString("fr-FR", options)} – ${end.toLocaleDateString("fr-FR", options)}`;
+}
+
+function formatCount(value: number): string {
+  return value.toLocaleString("fr-FR");
+}
+
+function formatAvg(value: number): string {
+  return value.toLocaleString("fr-FR", {
+    maximumFractionDigits: 1,
+  });
+}
+
+function inRange(iso: string | Date | undefined, from: Date, to: Date): boolean {
+  if (!iso) {
+    return false;
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+  return date >= from && date < to;
+}
+
+function formatPercentDelta(current: number, previous: number): string | null {
+  if (previous === 0 && current === 0) {
+    return null;
+  }
+  if (previous === 0) {
+    return "+100 %";
+  }
+  const pct = ((current - previous) / previous) * 100;
+  if (Math.abs(pct) < 0.05) {
+    return null;
+  }
+  const rounded =
+    Math.abs(pct) >= 10 ? Math.round(pct) : Math.round(pct * 10) / 10;
+  const sign = rounded > 0 ? "+" : "−";
+  return `${sign}${Math.abs(rounded).toLocaleString("fr-FR")} %`;
+}
+
+function formatAbsDelta(current: number, previous: number): string | null {
+  const diff = current - previous;
+  if (Math.abs(diff) < 0.05) {
+    return null;
+  }
+  return formatAvg(Math.abs(diff));
+}
+
+async function fetchAllVideos(): Promise<VideoItem[]> {
+  const items: VideoItem[] = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < 40; page += 1) {
+    const params = new URLSearchParams({ limit: "50" });
+    if (cursor) {
+      params.set("cursor", cursor);
+    }
+    const response = await fetch(`/api/videos?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error("videos unavailable");
+    }
+    const data = await response.json();
+    const batch = Array.isArray(data.items) ? (data.items as VideoItem[]) : [];
+    items.push(...batch);
+    cursor = data.nextCursor ?? null;
+    if (!cursor) {
+      break;
+    }
+  }
+  return items;
+}
+
+async function fetchAllUsers(): Promise<ListedUser[]> {
+  const users: ListedUser[] = [];
+  let offset = 0;
+  const limit = 50;
+  let total = Number.POSITIVE_INFINITY;
+  while (offset < total) {
+    const { data, error } = await authClient.admin.listUsers({
+      query: {
+        limit,
+        offset,
+        sortBy: "createdAt",
+        sortDirection: "desc",
+      },
+    });
+    if (error || !data) {
+      throw new Error(error?.message ?? "users unavailable");
+    }
+    const batch = (data.users ?? []) as ListedUser[];
+    users.push(...batch);
+    total = typeof data.total === "number" ? data.total : users.length;
+    offset += batch.length;
+    if (batch.length === 0) {
+      break;
+    }
+  }
+  return users;
+}
+
+function toPending(item: VideoItem): PendingVideo {
+  return {
+    id: item.id,
+    name: item.user?.name || "Profil",
+    submittedAt: formatSubmittedAt(item.createdAt),
+    url: item.url ?? null,
+  };
+}
+
 export default function AdminPage() {
   return (
     <RequireRegistration>
@@ -69,37 +206,36 @@ export default function AdminPage() {
 
 function AdminModeration() {
   const { showError } = useToast();
-  const [pending, setPending] = useState<PendingVideo[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [users, setUsers] = useState<ListedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<PendingVideo | null>(null);
   const [watching, setWatching] = useState<PendingVideo | null>(null);
   const [view, setView] = useState<"moderation" | "users">("moderation");
+  const windowBounds = useMemo(() => statWindow(), []);
 
   useEffect(() => {
     let alive = true;
     async function load() {
       setLoading(true);
       try {
-        const response = await fetch("/api/videos?validated=false&limit=50");
-        if (!response.ok) {
-          throw new Error("videos unavailable");
+        const [videoResult, userResult] = await Promise.allSettled([
+          fetchAllVideos(),
+          fetchAllUsers(),
+        ]);
+        if (!alive) {
+          return;
         }
-        const data = await response.json();
-        const list: PendingVideo[] = (
-          Array.isArray(data.items) ? (data.items as VideoItem[]) : []
-        ).map((item) => ({
-          id: item.id,
-          name: item.user?.name || "Profil",
-          submittedAt: formatSubmittedAt(item.createdAt),
-          url: item.url ?? null,
-        }));
-        if (alive) {
-          setPending(list);
-        }
-      } catch {
-        if (alive) {
+        if (videoResult.status === "fulfilled") {
+          setVideos(videoResult.value);
+        } else {
           showError("Impossible de charger les vidéos à valider.", "Modération");
+        }
+        if (userResult.status === "fulfilled") {
+          setUsers(userResult.value);
+        } else {
+          showError("Impossible de charger les utilisateurs.", "Modération");
         }
       } finally {
         if (alive) {
@@ -113,9 +249,44 @@ function AdminModeration() {
     };
   }, [showError]);
 
-  function removePending(id: string) {
-    setPending((current) => current.filter((video) => video.id !== id));
-  }
+  const pendingItems = useMemo(
+    () => videos.filter((video) => video.validated === false),
+    [videos],
+  );
+  const pending = useMemo(
+    () => pendingItems.map(toPending),
+    [pendingItems],
+  );
+
+  const stats = useMemo(() => {
+    const { start, end, prevStart, prevEnd } = windowBounds;
+    const inscriptions = users.filter((user) =>
+      inRange(user.createdAt, start, end),
+    ).length;
+    const inscriptionsPrev = users.filter((user) =>
+      inRange(user.createdAt, prevStart, prevEnd),
+    ).length;
+    const videosNow = videos.filter((video) =>
+      inRange(video.createdAt, start, end),
+    ).length;
+    const videosPrev = videos.filter((video) =>
+      inRange(video.createdAt, prevStart, prevEnd),
+    ).length;
+    const avg = videosNow / STAT_DAYS;
+    const avgPrev = videosPrev / STAT_DAYS;
+    return {
+      totalUsers: users.length,
+      inscriptions,
+      userDelta: formatPercentDelta(inscriptions, inscriptionsPrev),
+      userTrend: inscriptions >= inscriptionsPrev ? "up" : "down",
+      avgPerDay: avg,
+      avgDelta: formatAbsDelta(avg, avgPrev),
+      avgTrend: avg >= avgPrev ? "up" : "down",
+      inscriptionsDelta: formatAbsDelta(inscriptions, inscriptionsPrev),
+      inscriptionsTrend:
+        inscriptions >= inscriptionsPrev ? "up" : "down",
+    };
+  }, [users, videos, windowBounds]);
 
   async function approve(id: string) {
     if (actingId) {
@@ -131,7 +302,11 @@ function AdminModeration() {
       if (!response.ok) {
         throw new Error("approve failed");
       }
-      removePending(id);
+      setVideos((current) =>
+        current.map((video) =>
+          video.id === id ? { ...video, validated: true } : video,
+        ),
+      );
     } catch {
       showError("Impossible d'approuver cette vidéo.", "Validation échouée");
     } finally {
@@ -149,7 +324,7 @@ function AdminModeration() {
       if (!response.ok && response.status !== 204) {
         throw new Error("reject failed");
       }
-      removePending(id);
+      setVideos((current) => current.filter((video) => video.id !== id));
       setRejecting(null);
     } catch {
       showError("Impossible de refuser cette vidéo.", "Refus échoué");
@@ -188,7 +363,7 @@ function AdminModeration() {
             </button>
             <span className="hidden items-center gap-2 rounded-full border border-bordure-defaut bg-fond-neutre px-4 py-2 font-sans text-sm font-medium text-texte-secondaire sm:flex">
               <CalendarIcon className="size-4 text-texte-tertiaire" />
-              04 fév. – 11 fév.
+              {formatRange(windowBounds.start, windowBounds.end)}
             </span>
           </div>
         </div>
@@ -215,7 +390,7 @@ function AdminModeration() {
         </div>
 
         {view === "users" ? (
-          <UserTable />
+          <UserTable users={users} videos={videos} loading={loading} />
         ) : (
           <div className="flex flex-col gap-10">
             {/* Statistiques */}
@@ -230,17 +405,27 @@ function AdminModeration() {
                 </h2>
                 <div className="flex items-baseline gap-3">
                   <span className="font-sans text-4xl font-bold tracking-tight text-texte-principal">
-                    4 944
+                    {loading ? "—" : formatCount(stats.totalUsers)}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 font-sans text-xs font-semibold text-emerald-700">
-                      <ArrowUpRightIcon className="size-3" />
-                      +2,1 %
-                    </span>
-                    <span className="font-sans text-xs text-texte-tertiaire">
-                      vs semaine préc.
-                    </span>
-                  </div>
+                  {!loading && stats.userDelta ? (
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-sans text-xs font-semibold ${
+                          stats.userTrend === "up"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-fond-neutre text-texte-secondaire"
+                        }`}
+                      >
+                        {stats.userTrend === "up" ? (
+                          <ArrowUpRightIcon className="size-3" />
+                        ) : null}
+                        {stats.userDelta}
+                      </span>
+                      <span className="font-sans text-xs text-texte-tertiaire">
+                        vs semaine préc.
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -252,13 +437,23 @@ function AdminModeration() {
                   </p>
                   <div className="flex items-baseline justify-between">
                     <span className="font-sans text-2xl font-bold text-texte-principal">
-                      {pending.length}
+                      {loading ? "—" : pending.length}
                     </span>
                     <VideoIcon className="size-5 text-bleu-institutionnel opacity-30" />
                   </div>
                 </div>
-                <StatCell label="Moyenne / jour" value="14" delta="1,2" />
-                <StatCell label="Inscriptions" value="2 104" delta="142" />
+                <StatCell
+                  label="Moyenne / jour"
+                  value={loading ? "—" : formatAvg(stats.avgPerDay)}
+                  delta={loading ? null : stats.avgDelta}
+                  up={stats.avgTrend === "up"}
+                />
+                <StatCell
+                  label="Inscriptions"
+                  value={loading ? "—" : formatCount(stats.inscriptions)}
+                  delta={loading ? null : stats.inscriptionsDelta}
+                  up={stats.inscriptionsTrend === "up"}
+                />
               </div>
             </div>
 
@@ -356,10 +551,12 @@ function StatCell({
   label,
   value,
   delta,
+  up,
 }: {
   label: string;
   value: string;
-  delta: string;
+  delta: string | null;
+  up: boolean;
 }) {
   return (
     <div className="flex flex-1 flex-col justify-center p-6">
@@ -370,10 +567,16 @@ function StatCell({
         <span className="font-sans text-2xl font-bold text-texte-principal">
           {value}
         </span>
-        <span className="flex items-center font-sans text-xs font-medium text-emerald-600">
-          <ArrowUpRightIcon className="mr-0.5 size-3" />
-          {delta}
-        </span>
+        {delta ? (
+          <span
+            className={`flex items-center font-sans text-xs font-medium ${
+              up ? "text-emerald-600" : "text-texte-tertiaire"
+            }`}
+          >
+            {up ? <ArrowUpRightIcon className="mr-0.5 size-3" /> : null}
+            {up ? delta : `−${delta}`}
+          </span>
+        ) : null}
       </div>
     </div>
   );
