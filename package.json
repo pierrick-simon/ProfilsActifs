@@ -9,7 +9,8 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "test": "vitest run",
-    "migrate:video-storage": "tsx scripts/migrate-video-storage.ts"
+    "migrate:video-storage": "tsx scripts/migrate-video-storage.ts",
+    "generate_profiles": "tsx scripts/generate_profiles.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
@@ -25,15 +26,18 @@
     "swagger-ui-react": "^5.32.15"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.43",
     "@types/pg": "^8.23.1",
+    "@types/prompts": "^2.4.9",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/swagger-ui-react": "^5.18.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "prisma": "^7.10.0",
+    "prompts": "^2.4.2",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5",
