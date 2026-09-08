@@ -11,6 +11,19 @@ export default function QuestionStepper({
 }) {
   const steps = Array.from({ length: total }, (_, index) => index + 1);
 
+  if (total > 8) {
+    return (
+      <div className="flex items-center gap-3">
+        <span className="flex size-6 items-center justify-center rounded-full bg-bleu-institutionnel font-sans text-xs font-medium text-texte-inverse">
+          {current}
+        </span>
+        <span className="font-sans text-xs font-medium text-texte-tertiaire">
+          / {total}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-4">
       {steps.map((step, index) => (
