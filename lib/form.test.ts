@@ -11,6 +11,7 @@ import {
   getUserFormResponse,
   areAllQuestionsAnswered,
   setUserCertified,
+  isResponseCorrect,
   Question,
   Form,
 } from "./form";
@@ -373,6 +374,32 @@ describe("lib/form", () => {
           certification: now,
         },
       });
+    });
+  });
+
+  describe("isResponseCorrect", () => {
+    it("accepts the expected single-choice answer only", () => {
+      const question: Question = {
+        id: 1,
+        question: "Q",
+        type: "single-choice",
+        options: { choices: ["A", "B"], answer: "A" },
+        weight: 1,
+      };
+      expect(isResponseCorrect(question, "A")).toBe(true);
+      expect(isResponseCorrect(question, "B")).toBe(false);
+    });
+
+    it("treats a filled free-answer as correct", () => {
+      const question: Question = {
+        id: 3,
+        question: "Q",
+        type: "free-answer",
+        options: { answer: null },
+        weight: 1,
+      };
+      expect(isResponseCorrect(question, "Une réponse")).toBe(true);
+      expect(isResponseCorrect(question, "   ")).toBe(false);
     });
   });
 });

@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
           activitySector: true,
           localisation: true,
           updatedAt: true,
+          certification: true,
         },
       },
     },

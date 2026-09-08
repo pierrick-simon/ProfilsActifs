@@ -28,6 +28,7 @@ type UserProfile = {
   activity?: string | null;
   video_url?: string | null;
   video_views?: number | null;
+  certification_date?: string | null;
   favorites?: string[];
 };
 
@@ -82,6 +83,7 @@ export default function FavoritesGrid() {
               : null,
             location: profile.city ?? null,
             userId: profile.id,
+            certified: Boolean(profile.certification_date),
           }));
 
         if (alive) {
