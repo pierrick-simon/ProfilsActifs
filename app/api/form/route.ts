@@ -1,3 +1,4 @@
+import path from "path";
 import {NextRequest, NextResponse} from "next/server";
 import {readFile} from "fs/promises";
 import {getFormFileName, getFormVersionFromFileName, getMostRecentFile, isFormValid, saveNewForm} from "@/lib/form";
@@ -26,7 +27,8 @@ export async function GET(
         return NextResponse.json({error: "Form is invalid", details: formValid.errors}, {status: 400});
     }
 
-    return NextResponse.json(form);
+    const formVersion = getFormVersionFromFileName(path.basename(mostRecentFile));
+    return NextResponse.json({ ...form, formVersion });
 }
 
 export async function POST(

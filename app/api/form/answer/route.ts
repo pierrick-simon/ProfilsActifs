@@ -8,6 +8,7 @@ import {
   saveFormResponse,
   setUserCertified,
   validateQuestionResponse,
+  areAllAnswersCorrect,
 } from "@/lib/form";
 
 export async function POST(request: NextRequest) {
@@ -109,7 +110,10 @@ export async function POST(request: NextRequest) {
   });
 
   const allAnswered = await areAllQuestionsAnswered(session.user.id, formVersion);
-  if (allAnswered) {
+  const allCorrect = allAnswered
+    ? await areAllAnswersCorrect(session.user.id, formVersion)
+    : false;
+  if (allCorrect) {
     await setUserCertified(session.user.id);
   }
 
@@ -119,6 +123,7 @@ export async function POST(request: NextRequest) {
       data: savedResponse,
       allAnswered,
       allQuestionsAnswered: allAnswered,
+      certified: allCorrect,
     },
     { status: 200 },
   );

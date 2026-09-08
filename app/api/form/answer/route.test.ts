@@ -19,6 +19,7 @@ vi.mock("@/lib/form", async (importOriginal) => {
     saveFormResponse: vi.fn(),
     getUserFormResponse: vi.fn(),
     areAllQuestionsAnswered: vi.fn(),
+    areAllAnswersCorrect: vi.fn(),
     setUserCertified: vi.fn(),
   };
 });
@@ -207,7 +208,7 @@ describe("/api/form/answer", () => {
       expect(formLib.setUserCertified).not.toHaveBeenCalled();
     });
 
-    it("successfully saves response, returns allAnswered: true, and certifies user when all questions answered", async () => {
+    it("successfully saves response, returns allAnswered: true, and certifies user when all answers are correct", async () => {
       vi.mocked(auth.api.getSession).mockResolvedValueOnce(mockSession as never);
       vi.mocked(formLib.saveFormResponse).mockResolvedValueOnce({
         id: "resp-final",
@@ -218,6 +219,7 @@ describe("/api/form/answer", () => {
         createdAt: new Date(),
       });
       vi.mocked(formLib.areAllQuestionsAnswered).mockResolvedValueOnce(true);
+      vi.mocked(formLib.areAllAnswersCorrect).mockResolvedValueOnce(true);
       vi.mocked(formLib.setUserCertified).mockResolvedValueOnce({} as never);
 
       const req = createPostRequest({
@@ -231,7 +233,35 @@ describe("/api/form/answer", () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.allAnswered).toBe(true);
+      expect(json.certified).toBe(true);
       expect(formLib.setUserCertified).toHaveBeenCalledWith("user-123");
+    });
+
+    it("does not certify the user when every question is answered but some are wrong", async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(mockSession as never);
+      vi.mocked(formLib.saveFormResponse).mockResolvedValueOnce({
+        id: "resp-final",
+        userId: "user-123",
+        questionId: "20",
+        formVersionId: 1,
+        response: ["Ignorer complètement le message"],
+        createdAt: new Date(),
+      });
+      vi.mocked(formLib.areAllQuestionsAnswered).mockResolvedValueOnce(true);
+      vi.mocked(formLib.areAllAnswersCorrect).mockResolvedValueOnce(false);
+
+      const req = createPostRequest({
+        formVersion: 1,
+        questionId: 20,
+        response: ["Ignorer complètement le message"],
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.allAnswered).toBe(true);
+      expect(json.certified).toBe(false);
+      expect(formLib.setUserCertified).not.toHaveBeenCalled();
     });
   });
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   EyeIcon,
@@ -43,6 +44,7 @@ export type ProfileVideo = {
   role: string | null;
   location: string | null;
   userId: string;
+  certified: boolean;
 };
 
 type VideoItem = {
@@ -55,6 +57,7 @@ type VideoItem = {
     name?: string | null;
     activitySector?: string | null;
     localisation?: string | null;
+    certification?: string | null;
   } | null;
 };
 
@@ -169,6 +172,7 @@ export default function ProfileGrid() {
             : null,
           location: v.user?.localisation ?? null,
           userId: v.userId ?? v.user?.id ?? "",
+          certified: Boolean(v.user?.certification),
         }));
 
         if (alive) {
@@ -517,8 +521,16 @@ export function ProfileCard({ video }: { video: ProfileVideo }) {
       </div>
       <div className="absolute inset-x-0 bottom-0 flex translate-y-0 flex-col gap-1 p-5 transition-transform duration-300 group-hover:-translate-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-sans text-lg font-bold leading-tight text-texte-inverse">
-            {video.name || "Profil"}
+          <h3 className="flex min-w-0 items-center gap-1.5 font-sans text-lg font-bold leading-tight text-texte-inverse">
+            <span className="truncate">{video.name || "Profil"}</span>
+            {video.certified && (
+              <span
+                title="Profil certifié"
+                className="flex size-5 shrink-0 items-center justify-center rounded-full bg-bleu-institutionnel text-texte-inverse"
+              >
+                <CheckIcon className="size-3" />
+              </span>
+            )}
           </h3>
           <span className="flex items-center gap-1 rounded-md border border-white/10 bg-black/40 px-2 py-1 font-sans text-xs font-medium text-texte-inverse backdrop-blur-sm">
             <EyeIcon className="size-3.5" /> {formatViews(video.views)}

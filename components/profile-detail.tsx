@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
+  CheckIcon,
   EyeIcon,
   HeartIcon,
   MailIcon,
   MapPinIcon,
   ShareIcon,
+  ShieldCheckIcon,
 } from "@/components/icons";
 import BackButton from "@/components/back-button";
 import { useViewerRole } from "@/hooks/use-role";
@@ -208,26 +210,44 @@ export default function ProfileDetail({ userId }: { userId: string }) {
               <div className="rounded-2xl border border-bordure-defaut bg-fond-page p-6 shadow-sm">
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
-                    <h1 className="font-sans text-2xl font-bold text-texte-principal">
-                      {displayName || "Profil"}
-                    </h1>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="font-sans text-2xl font-bold text-texte-principal">
+                        {displayName || "Profil"}
+                      </h1>
+                      {profile.certification_date && (
+                        <span
+                          title={`Certifié le ${formatDate(profile.certification_date)}`}
+                          className="inline-flex items-center gap-1 rounded-full bg-bleu-institutionnel px-2 py-0.5 font-sans text-xs font-semibold text-texte-inverse"
+                        >
+                          <ShieldCheckIcon className="size-3.5" />
+                          Certifié
+                        </span>
+                      )}
+                    </div>
                     {profile.activity && (
                       <p className="mt-1 font-sans text-lg font-medium text-bleu-institutionnel">
                         {SECTOR_LABELS[profile.activity] ?? profile.activity}
                       </p>
                     )}
                   </div>
-                  <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-fond-page bg-fond-bleu-clair font-sans text-lg font-medium text-bleu-institutionnel shadow-md">
-                    {avatar ? (
-                      <Image
-                        src={avatar}
-                        alt={displayName}
-                        width={64}
-                        height={64}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      (displayName.charAt(0) || "?").toUpperCase()
+                  <div className="relative size-16 shrink-0">
+                    <div className="flex size-16 items-center justify-center overflow-hidden rounded-full border-2 border-fond-page bg-fond-bleu-clair font-sans text-lg font-medium text-bleu-institutionnel shadow-md">
+                      {avatar ? (
+                        <Image
+                          src={avatar}
+                          alt={displayName}
+                          width={64}
+                          height={64}
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        (displayName.charAt(0) || "?").toUpperCase()
+                      )}
+                    </div>
+                    {profile.certification_date && (
+                      <span className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border-2 border-fond-page bg-bleu-institutionnel text-texte-inverse">
+                        <CheckIcon className="size-2.5" />
+                      </span>
                     )}
                   </div>
                 </div>
@@ -237,11 +257,6 @@ export default function ProfileDetail({ userId }: { userId: string }) {
                     <span className="flex items-center gap-1.5 rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-1.5 font-sans text-sm text-texte-secondaire">
                       <MapPinIcon className="size-4 text-texte-tertiaire" />{" "}
                       {profile.city}
-                    </span>
-                  )}
-                  {profile.certification_date && (
-                    <span className="rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-1.5 font-sans text-sm text-texte-secondaire">
-                      Certifié le {formatDate(profile.certification_date)}
                     </span>
                   )}
                 </div>

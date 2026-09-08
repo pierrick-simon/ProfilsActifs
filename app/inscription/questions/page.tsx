@@ -79,11 +79,20 @@ function isAnswered(question: ApiQuestion, value: AnswerValue | undefined): bool
   }
 }
 
+function payloadFor(question: ApiQuestion, value: AnswerValue): unknown {
+  if (question.type === "numeric") {
+    return Number(value);
+  }
+  return value;
+}
+
 export default function QuestionsPage() {
   const router = useRouter();
   const { showError } = useToast();
   const [questions, setQuestions] = useState<ApiQuestion[]>([]);
+  const [formVersion, setFormVersion] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
 
@@ -107,6 +116,9 @@ export default function QuestionsPage() {
           : [];
         if (alive) {
           setQuestions(list);
+          setFormVersion(
+            typeof data.formVersion === "number" ? data.formVersion : null,
+          );
           setStep(0);
         }
       } catch {
@@ -128,7 +140,62 @@ export default function QuestionsPage() {
   const question = questions[step];
   const isLast = questions.length > 0 && step === questions.length - 1;
   const currentAnswer = question ? answers[question.id] : undefined;
-  const canContinue = question ? isAnswered(question, currentAnswer) : false;
+  const canContinue =
+    Boolean(question && isAnswered(question, currentAnswer)) && !submitting;
+
+  async function submitAnswers() {
+    if (formVersion === null) {
+      showError("Version du formulaire inconnue.", "Envoi impossible");
+      return false;
+    }
+
+    for (const item of questions) {
+      const value = answers[item.id];
+      if (value === undefined || !isAnswered(item, value)) {
+        showError("Répondez à toutes les questions avant de terminer.");
+        return false;
+      }
+      const response = await fetch("/api/form/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          formVersion,
+          questionId: item.id,
+          response: payloadFor(item, value),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("answer failed");
+      }
+    }
+    return true;
+  }
+
+  async function goNext() {
+    if (!canContinue) {
+      return;
+    }
+    if (!isLast) {
+      setStep((current) => current + 1);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const saved = await submitAnswers();
+      if (saved) {
+        router.push("/");
+      }
+    } catch {
+      showError(
+        "Impossible d'enregistrer vos réponses.",
+        "Questionnaire incomplet",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const Icon = question ? iconForType(question.type) : InfoIcon;
 
   function setAnswer(value: AnswerValue) {
@@ -145,17 +212,6 @@ export default function QuestionsPage() {
         ? current.filter((item) => item !== choice)
         : [...current, choice],
     );
-  }
-
-  function goNext() {
-    if (!canContinue) {
-      return;
-    }
-    if (isLast) {
-      router.push("/");
-      return;
-    }
-    setStep((current) => current + 1);
   }
 
   function goBack() {
@@ -243,7 +299,11 @@ export default function QuestionsPage() {
                 className="flex w-full items-center justify-center gap-1 overflow-hidden rounded-[10px] bg-bleu-institutionnel bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)] p-2.5 shadow-[0px_0px_0px_1px_var(--color-bleu-institutionnel),0px_1px_2px_0px_rgba(14,18,27,0.24)] outline outline-1 -outline-offset-1 outline-white/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100"
               >
                 <span className="px-1 font-sans text-sm font-medium leading-5 text-texte-inverse">
-                  {isLast ? "Terminer" : "Continuer"}
+                  {submitting
+                    ? "Enregistrement..."
+                    : isLast
+                      ? "Terminer"
+                      : "Continuer"}
                 </span>
               </button>
             </>

@@ -394,6 +394,62 @@ export async function areAllQuestionsAnswered(
     return form.questions.every((q) => answeredQuestionIds.has(String(q.id)));
 }
 
+export function isResponseCorrect(question: Question, response: unknown): boolean {
+    if (!validateQuestionResponse(question, response).valid) {
+        return false;
+    }
+
+    switch (question.type) {
+        case "free-answer":
+            return typeof response === "string" && response.trim().length > 0;
+        case "single-choice":
+        case "true-false":
+        case "numeric":
+        case "date":
+            return response === question.options.answer;
+        case "multiple-choice": {
+            if (!Array.isArray(response) || !("answer" in question.options) || !Array.isArray(question.options.answer)) {
+                return false;
+            }
+            const expected = [...question.options.answer].sort();
+            const got = [...response].sort();
+            return expected.length === got.length && expected.every((value, index) => value === got[index]);
+        }
+        default:
+            return false;
+    }
+}
+
+export async function areAllAnswersCorrect(
+    userId: string,
+    formVersion: number
+): Promise<boolean> {
+    const form = getFormByVersion(formVersion);
+    if (!form || !Array.isArray(form.questions) || form.questions.length === 0) {
+        return false;
+    }
+
+    const responses = await prisma.formResponse.findMany({
+        where: {
+            userId,
+            formVersionId: formVersion,
+        },
+        select: {
+            questionId: true,
+            response: true,
+        },
+    });
+
+    const byQuestion = new Map(
+        responses.map((row) => [row.questionId, row.response]),
+    );
+
+    return form.questions.every((question) => {
+        const response = byQuestion.get(String(question.id));
+        return response !== undefined && isResponseCorrect(question, response);
+    });
+}
+
 export async function setUserCertified(userId: string, date: Date = new Date()) {
     return await prisma.user.update({
         where: { id: userId },
