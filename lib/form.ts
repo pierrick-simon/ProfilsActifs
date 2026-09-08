@@ -1,5 +1,7 @@
 import path from "path";
-import { readdirSync, lstatSync, writeFileSync } from "fs";
+import { readdirSync, lstatSync, writeFileSync, existsSync, readFileSync } from "fs";
+import { randomUUID } from "crypto";
+import { prisma } from "./db";
 
 const NUM_FORM_QUESTION = 20;
 
@@ -57,9 +59,9 @@ export interface Form {
     questions: Question[]
 }
 
-export function isFormValid(formData: JSON): { valid: boolean; errors: string[] } {
+export function isFormValid(formData: unknown): { valid: boolean; errors: string[] } {
     const errors: string[] = []
-    const data: any = formData as any
+    const data = formData as Record<string, unknown>
 
     if (typeof data !== "object" || data === null) {
         errors.push("La racine doit être un objet JSON")
@@ -74,14 +76,15 @@ export function isFormValid(formData: JSON): { valid: boolean; errors: string[] 
     const ids = new Set<number>()
     const dateRe = /^\d{2}-\d{2}-\d{4}$/
 
-    data.questions.forEach((q: any, idx: number) => {
+    data.questions.forEach((q: unknown, idx: number) => {
         const ctx = `questions[${idx}]`
         if (typeof q !== "object" || q === null) {
             errors.push(`${ctx} doit être un objet`)
             return
         }
 
-        const {id, question, type, options, weight} = q
+        const qObj = q as Record<string, unknown>
+        const {id, question, type, options, weight} = qObj
 
         if (typeof id !== "number" || !Number.isInteger(id)) {
             errors.push(`${ctx}.id doit être un entier`)
@@ -100,41 +103,42 @@ export function isFormValid(formData: JSON): { valid: boolean; errors: string[] 
         if (typeof weight !== "number" || Number.isNaN(weight)) errors.push(`${ctx}.weight doit être un nombre`)
 
         if (typeof type === "string" && typeof options === "object" && options !== null) {
+            const opt = options as Record<string, unknown>
             switch (type) {
                 case "single-choice":
-                    if (!Array.isArray(options.choices)) errors.push(`${ctx}.options.choices doit être un tableau de chaînes de caractères`)
-                    else if (options.choices.some((c: any) => typeof c !== "string")) errors.push(`${ctx}.options.choices ne doit contenir que des chaînes de caractères`)
-                    if (typeof options.answer !== "string") errors.push(`${ctx}.options.answer doit être une chaîne de caractères`)
-                    else if (Array.isArray(options.choices) && !options.choices.includes(options.answer)) errors.push(`${ctx}.options.answer doit correspondre à l'une des valeurs de options.choices`)
+                    if (!Array.isArray(opt.choices)) errors.push(`${ctx}.options.choices doit être un tableau de chaînes de caractères`)
+                    else if (opt.choices.some((c: unknown) => typeof c !== "string")) errors.push(`${ctx}.options.choices ne doit contenir que des chaînes de caractères`)
+                    if (typeof opt.answer !== "string") errors.push(`${ctx}.options.answer doit être une chaîne de caractères`)
+                    else if (Array.isArray(opt.choices) && !opt.choices.includes(opt.answer)) errors.push(`${ctx}.options.answer doit correspondre à l'une des valeurs de options.choices`)
                     break
 
                 case "multiple-choice":
-                    if (!Array.isArray(options.choices)) errors.push(`${ctx}.options.choices doit être un tableau de chaînes de caractères`)
-                    else if (options.choices.some((c: any) => typeof c !== "string")) errors.push(`${ctx}.options.choices ne doit contenir que des chaînes de caractères`)
-                    if (!Array.isArray(options.answer)) errors.push(`${ctx}.options.answer doit être un tableau de chaînes de caractères`)
-                    else if (options.answer.some((a: any) => typeof a !== "string")) errors.push(`${ctx}.options.answer ne doit contenir que des chaînes de caractères`)
-                    else if (Array.isArray(options.choices)) {
-                        for (const a of options.answer) {
-                            if (!options.choices.includes(a)) errors.push(`${ctx}.options.answer contient une valeur absente de options.choices : ${a}`)
+                    if (!Array.isArray(opt.choices)) errors.push(`${ctx}.options.choices doit être un tableau de chaînes de caractères`)
+                    else if (opt.choices.some((c: unknown) => typeof c !== "string")) errors.push(`${ctx}.options.choices ne doit contenir que des chaînes de caractères`)
+                    if (!Array.isArray(opt.answer)) errors.push(`${ctx}.options.answer doit être un tableau de chaînes de caractères`)
+                    else if (opt.answer.some((a: unknown) => typeof a !== "string")) errors.push(`${ctx}.options.answer ne doit contenir que des chaînes de caractères`)
+                    else if (Array.isArray(opt.choices)) {
+                        for (const a of opt.answer) {
+                            if (!opt.choices.includes(a)) errors.push(`${ctx}.options.answer contient une valeur absente de options.choices : ${a}`)
                         }
                     }
                     break
 
                 case "true-false":
-                    if (typeof options.answer !== "boolean") errors.push(`${ctx}.options.answer doit être un booléen`)
+                    if (typeof opt.answer !== "boolean") errors.push(`${ctx}.options.answer doit être un booléen`)
                     break
 
                 case "free-answer":
-                    if (options.answer !== null) errors.push(`${ctx}.options.answer doit être null pour les questions de type free-answer`)
+                    if (opt.answer !== null) errors.push(`${ctx}.options.answer doit être null pour les questions de type free-answer`)
                     break
 
                 case "date":
-                    if (typeof options.answer !== "string") errors.push(`${ctx}.options.answer doit être une chaîne de caractères représentant une date`)
-                    else if (!dateRe.test(options.answer)) errors.push(`${ctx}.options.answer doit respecter le format JJ-MM-AAAA`)
+                    if (typeof opt.answer !== "string") errors.push(`${ctx}.options.answer doit être une chaîne de caractères représentant une date`)
+                    else if (!dateRe.test(opt.answer)) errors.push(`${ctx}.options.answer doit respecter le format JJ-MM-AAAA`)
                     break
 
                 case "numeric":
-                    if (typeof options.answer !== "number" || Number.isNaN(options.answer)) errors.push(`${ctx}.options.answer doit être un nombre`)
+                    if (typeof opt.answer !== "number" || Number.isNaN(opt.answer)) errors.push(`${ctx}.options.answer doit être un nombre`)
                     break
 
                 default:
@@ -202,4 +206,143 @@ export function saveNewForm(formData: Form): string {
     writeFileSync(newFilePath, JSON.stringify(formData, null, 2), "utf-8");
 
     return newFilePath;
+}
+
+export function getFormPathByVersion(version: number): string {
+    const formFolder = path.join(process.cwd(), "certification");
+    return path.join(formFolder, getFormFileName(version));
+}
+
+export function getFormByVersion(version: number): Form | null {
+    const filePath = getFormPathByVersion(version);
+    if (!existsSync(filePath)) {
+        return null;
+    }
+    try {
+        const content = readFileSync(filePath, "utf-8");
+        const parsed = JSON.parse(content);
+        return parsed as Form;
+    } catch {
+        return null;
+    }
+}
+
+export function getQuestionFromForm(form: Form, questionId: number | string): Question | null {
+    const qId = typeof questionId === "string" ? parseInt(questionId, 10) : questionId;
+    if (Number.isNaN(qId)) {
+        return null;
+    }
+    return form.questions.find((q) => q.id === qId) ?? null;
+}
+
+export function validateQuestionResponse(
+    question: Question,
+    response: unknown
+): { valid: boolean; error?: string } {
+    if (response === undefined || response === null) {
+        return { valid: false, error: "Response cannot be empty" };
+    }
+
+    switch (question.type) {
+        case "single-choice":
+            if (typeof response !== "string") {
+                return { valid: false, error: "Response must be a string" };
+            }
+            if ("choices" in question.options && Array.isArray(question.options.choices)) {
+                if (!question.options.choices.includes(response)) {
+                    return { valid: false, error: "Response is not a valid choice" };
+                }
+            }
+            break;
+
+        case "multiple-choice":
+            if (!Array.isArray(response)) {
+                return { valid: false, error: "Response must be an array" };
+            }
+            if (response.some((item) => typeof item !== "string")) {
+                return { valid: false, error: "All choices in response must be strings" };
+            }
+            if ("choices" in question.options && Array.isArray(question.options.choices)) {
+                for (const r of response) {
+                    if (!question.options.choices.includes(r)) {
+                        return { valid: false, error: `Invalid choice: ${r}` };
+                    }
+                }
+            }
+            break;
+
+        case "true-false":
+            if (typeof response !== "boolean") {
+                return { valid: false, error: "Response must be a boolean" };
+            }
+            break;
+
+        case "free-answer":
+            if (typeof response !== "string") {
+                return { valid: false, error: "Response must be a string" };
+            }
+            break;
+
+        case "date":
+            if (typeof response !== "string") {
+                return { valid: false, error: "Response must be a string" };
+            }
+            break;
+
+        case "numeric":
+            if (typeof response !== "number" || Number.isNaN(response)) {
+                return { valid: false, error: "Response must be a number" };
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    return { valid: true };
+}
+
+export interface SaveFormResponseParams {
+    userId: string;
+    questionId: string | number;
+    formVersionId: number;
+    response: unknown;
+}
+
+export async function saveFormResponse({
+    userId,
+    questionId,
+    formVersionId,
+    response,
+}: SaveFormResponseParams) {
+    const qIdStr = String(questionId);
+
+    const existing = await prisma.formResponse.findFirst({
+        where: {
+            userId,
+            questionId: qIdStr,
+            formVersionId,
+        },
+    });
+
+    if (existing) {
+        return await prisma.formResponse.update({
+            where: { id: existing.id },
+            data: {
+                response: response as object,
+                createdAt: new Date(),
+            },
+        });
+    }
+
+    return await prisma.formResponse.create({
+        data: {
+            id: randomUUID(),
+            userId,
+            questionId: qIdStr,
+            response: response as object,
+            createdAt: new Date(),
+            formVersionId,
+        },
+    });
 }
