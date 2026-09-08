@@ -52,12 +52,8 @@ export async function GET(
   const startOfToday = new Date();
   startOfToday.setUTCHours(0, 0, 0, 0);
 
-  const [likeCount, likeCountToday, favoryCount, favoryCountToday] =
+  const [favoryCount, favoryCountToday] =
     await Promise.all([
-      prisma.like.count({ where: { likedUserId: userId } }),
-      prisma.like.count({
-        where: { likedUserId: userId, timestamp: { gte: startOfToday } },
-      }),
       prisma.favory.count({ where: { favoredUserId: userId } }),
       prisma.favory.count({
         where: { favoredUserId: userId, timestamp: { gte: startOfToday } },

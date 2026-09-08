@@ -87,23 +87,7 @@ export async function GET(request: NextRequest) {
         })
       : null;
 
-  // 6. Check which of the returned videos' profiles the viewer already likes
-  let likedProfileIds = new Set<string>();
-  if (viewerId) {
-    const profileIds = Array.from(new Set(returnedVideos.map((v) => v.userId)));
-    if (profileIds.length > 0) {
-      const likes = await prisma.like.findMany({
-        where: {
-          likerUserId: viewerId,
-          likedUserId: { in: profileIds },
-        },
-        select: { likedUserId: true },
-      });
-      likedProfileIds = new Set(likes.map((l) => l.likedUserId));
-    }
-  }
-
-  // 7. Check which of the returned videos' profiles the viewer already put in his favory
+  // 6. Check which of the returned videos' profiles the viewer already put in his favory
   let favoredProfileIds = new Set<string>();
   if (viewerId) {
     const profileIds = Array.from(new Set(returnedVideos.map((v) => v.userId)));
