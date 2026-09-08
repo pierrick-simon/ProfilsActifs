@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
+  areAllQuestionsAnswered,
   getFormByVersion,
   getQuestionFromForm,
+  getUserFormResponse,
   saveFormResponse,
+  setUserCertified,
   validateQuestionResponse,
 } from "@/lib/form";
 
@@ -105,10 +108,93 @@ export async function POST(request: NextRequest) {
     response: rawResponse,
   });
 
+  const allAnswered = await areAllQuestionsAnswered(session.user.id, formVersion);
+  if (allAnswered) {
+    await setUserCertified(session.user.id);
+  }
+
   return NextResponse.json(
     {
       success: true,
       data: savedResponse,
+      allAnswered,
+      allQuestionsAnswered: allAnswered,
+    },
+    { status: 200 },
+  );
+}
+
+export async function GET(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const rawVersion =
+    searchParams.get("formVersion") ??
+    searchParams.get("formVersionId") ??
+    searchParams.get("version");
+  const rawQuestionId = searchParams.get("questionId") ?? searchParams.get("id");
+
+  if (rawQuestionId === null || rawQuestionId.trim() === "") {
+    return NextResponse.json(
+      { error: "Question ID is required" },
+      { status: 400 },
+    );
+  }
+
+  let formVersion: number | undefined;
+  if (rawVersion !== null && rawVersion.trim() !== "") {
+    formVersion = Number(rawVersion);
+    if (!Number.isInteger(formVersion) || formVersion <= 0) {
+      return NextResponse.json(
+        { error: "Invalid form version" },
+        { status: 400 },
+      );
+    }
+
+    const form = getFormByVersion(formVersion);
+    if (!form) {
+      return NextResponse.json(
+        { error: "Form version not found" },
+        { status: 404 },
+      );
+    }
+
+    const question = getQuestionFromForm(form, rawQuestionId);
+    if (!question) {
+      return NextResponse.json(
+        { error: "Question not found in form" },
+        { status: 404 },
+      );
+    }
+  }
+
+  const userResponse = await getUserFormResponse({
+    userId: session.user.id,
+    questionId: rawQuestionId,
+    formVersionId: formVersion,
+  });
+
+  if (!userResponse) {
+    return NextResponse.json(
+      {
+        success: true,
+        data: null,
+        response: null,
+        answer: null,
+      },
+      { status: 200 },
+    );
+  }
+
+  return NextResponse.json(
+    {
+      success: true,
+      data: userResponse,
+      response: userResponse.response,
+      answer: userResponse.response,
     },
     { status: 200 },
   );

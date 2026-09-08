@@ -8,6 +8,9 @@ import {
   getQuestionFromForm,
   validateQuestionResponse,
   saveFormResponse,
+  getUserFormResponse,
+  areAllQuestionsAnswered,
+  setUserCertified,
   Question,
   Form,
 } from "./form";
@@ -17,8 +20,12 @@ vi.mock("./db", () => ({
   prisma: {
     formResponse: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       update: vi.fn(),
       create: vi.fn(),
+    },
+    user: {
+      update: vi.fn(),
     },
   },
 }));
@@ -259,6 +266,113 @@ describe("lib/form", () => {
         },
       });
       expect(result.id).toBe("res-existing");
+    });
+  });
+
+  describe("getUserFormResponse", () => {
+    it("fetches form response for a user and question", async () => {
+      const mockRecord = {
+        id: "res-1",
+        userId: "user-1",
+        questionId: "5",
+        response: "Answer 5",
+        createdAt: new Date(),
+        formVersionId: 1,
+      };
+      vi.mocked(prisma.formResponse.findFirst).mockResolvedValueOnce(mockRecord);
+
+      const result = await getUserFormResponse({
+        userId: "user-1",
+        questionId: 5,
+        formVersionId: 1,
+      });
+
+      expect(prisma.formResponse.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: "user-1",
+          questionId: "5",
+          formVersionId: 1,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+      expect(result).toEqual(mockRecord);
+    });
+
+    it("fetches without formVersionId filter if omitted", async () => {
+      vi.mocked(prisma.formResponse.findFirst).mockResolvedValueOnce(null);
+
+      const result = await getUserFormResponse({
+        userId: "user-1",
+        questionId: "5",
+      });
+
+      expect(prisma.formResponse.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: "user-1",
+          questionId: "5",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("areAllQuestionsAnswered", () => {
+    it("returns false for a non-existent form", async () => {
+      const result = await areAllQuestionsAnswered("user-1", 99999);
+      expect(result).toBe(false);
+    });
+
+    it("returns true if all 20 questions have been answered", async () => {
+      const allResponses = Array.from({ length: 20 }, (_, i) => ({
+        questionId: String(i + 1),
+      }));
+      vi.mocked(prisma.formResponse.findMany).mockResolvedValueOnce(allResponses as never);
+
+      const result = await areAllQuestionsAnswered("user-1", 1);
+      expect(result).toBe(true);
+      expect(prisma.formResponse.findMany).toHaveBeenCalledWith({
+        where: {
+          userId: "user-1",
+          formVersionId: 1,
+        },
+        select: {
+          questionId: true,
+        },
+      });
+    });
+
+    it("returns false if only some questions have been answered", async () => {
+      const partialResponses = Array.from({ length: 19 }, (_, i) => ({
+        questionId: String(i + 1),
+      }));
+      vi.mocked(prisma.formResponse.findMany).mockResolvedValueOnce(partialResponses as never);
+
+      const result = await areAllQuestionsAnswered("user-1", 1);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("setUserCertified", () => {
+    it("updates user certification date", async () => {
+      const now = new Date();
+      vi.mocked(prisma.user.update).mockResolvedValueOnce({
+        id: "user-1",
+        certification: now,
+      } as never);
+
+      await setUserCertified("user-1", now);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        data: {
+          certification: now,
+        },
+      });
     });
   });
 });

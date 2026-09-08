@@ -346,3 +346,59 @@ export async function saveFormResponse({
         },
     });
 }
+
+export interface GetUserFormResponseParams {
+    userId: string;
+    questionId: string | number;
+    formVersionId?: number;
+}
+
+export async function getUserFormResponse({
+    userId,
+    questionId,
+    formVersionId,
+}: GetUserFormResponseParams) {
+    const qIdStr = String(questionId);
+    return await prisma.formResponse.findFirst({
+        where: {
+            userId,
+            questionId: qIdStr,
+            ...(formVersionId !== undefined ? { formVersionId } : {}),
+        },
+        orderBy: {
+            createdAt: "desc",
+        },
+    });
+}
+
+export async function areAllQuestionsAnswered(
+    userId: string,
+    formVersion: number
+): Promise<boolean> {
+    const form = getFormByVersion(formVersion);
+    if (!form || !Array.isArray(form.questions) || form.questions.length === 0) {
+        return false;
+    }
+
+    const responses = await prisma.formResponse.findMany({
+        where: {
+            userId,
+            formVersionId: formVersion,
+        },
+        select: {
+            questionId: true,
+        },
+    });
+
+    const answeredQuestionIds = new Set(responses.map((r) => r.questionId));
+    return form.questions.every((q) => answeredQuestionIds.has(String(q.id)));
+}
+
+export async function setUserCertified(userId: string, date: Date = new Date()) {
+    return await prisma.user.update({
+        where: { id: userId },
+        data: {
+            certification: date,
+        },
+    });
+}
