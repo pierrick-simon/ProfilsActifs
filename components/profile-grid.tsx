@@ -31,7 +31,9 @@ const SECTOR_LABELS: Record<string, string> = {
   OTHER: "Autre",
 };
 
-type SortKey = "recent" | "relevance" | "views";
+type CertifiedFilter = "all" | "true" | "false";
+
+const SECTOR_OPTIONS = Object.entries(SECTOR_LABELS);
 
 export type ProfileVideo = {
   id: string;
@@ -63,6 +65,40 @@ function formatViews(count: number): string {
   return String(count);
 }
 
+function catalogQuery(params: {
+  canBrowse: boolean;
+  userId: string | null;
+  cursor: string | null;
+  sector: string;
+  location: string;
+  certified: CertifiedFilter;
+}): string | null {
+  if (!params.canBrowse && !params.userId) {
+    return null;
+  }
+
+  const search = new URLSearchParams({
+    limit: String(PAGE_SIZE),
+    sortBy: "date",
+  });
+  if (!params.canBrowse && params.userId) {
+    search.set("userId", params.userId);
+  }
+  if (params.cursor) {
+    search.set("cursor", params.cursor);
+  }
+  if (params.sector) {
+    search.set("sector", params.sector);
+  }
+  if (params.location) {
+    search.set("location", params.location);
+  }
+  if (params.certified === "true" || params.certified === "false") {
+    search.set("certified", params.certified);
+  }
+  return `/api/videos?${search.toString()}`;
+}
+
 export default function ProfileGrid() {
   const { isRecruiter, isAdmin, isPending: rolePending } = useViewerRole();
   const canBrowse = isRecruiter || isAdmin;
@@ -76,7 +112,18 @@ export default function ProfileGrid() {
   const [pageCursors, setPageCursors] = useState<(string | null)[]>([null]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortKey>("recent");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sector, setSector] = useState("");
+  const [location, setLocation] = useState("");
+  const [certified, setCertified] = useState<CertifiedFilter>("all");
+  const [draftSector, setDraftSector] = useState("");
+  const [draftLocation, setDraftLocation] = useState("");
+  const [draftCertified, setDraftCertified] = useState<CertifiedFilter>("all");
+
+  const activeFilterCount =
+    (sector ? 1 : 0) +
+    (location ? 1 : 0) +
+    (certified !== "all" ? 1 : 0);
 
   useEffect(() => {
     if (isPending || rolePending) {
@@ -87,13 +134,16 @@ export default function ProfileGrid() {
     async function load() {
       setLoading(true);
       try {
-        const base = canBrowse
-          ? `/api/videos?limit=${PAGE_SIZE}`
-          : userId
-            ? `/api/videos?userId=${userId}&limit=${PAGE_SIZE}`
-            : null;
+        const url = catalogQuery({
+          canBrowse,
+          userId,
+          cursor: pageCursors[page],
+          sector,
+          location,
+          certified,
+        });
 
-        if (!base) {
+        if (!url) {
           if (alive) {
             setVideos([]);
             setNextCursor(null);
@@ -101,8 +151,7 @@ export default function ProfileGrid() {
           return;
         }
 
-        const cursor = pageCursors[page];
-        const response = await fetch(cursor ? `${base}&cursor=${cursor}` : base);
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error("feed unavailable");
         }
@@ -140,18 +189,26 @@ export default function ProfileGrid() {
     return () => {
       alive = false;
     };
-  }, [page, pageCursors, canBrowse, userId, isPending, rolePending, showError]);
+  }, [
+    page,
+    pageCursors,
+    canBrowse,
+    userId,
+    isPending,
+    rolePending,
+    showError,
+    sector,
+    location,
+    certified,
+  ]);
 
   const displayed = useMemo(() => {
     const term = search.trim().toLowerCase();
-    const filtered = term
-      ? videos.filter((v) => v.name.toLowerCase().includes(term))
-      : videos;
-    if (sort === "views") {
-      return [...filtered].sort((a, b) => b.views - a.views);
+    if (!term) {
+      return videos;
     }
-    return filtered;
-  }, [videos, search, sort]);
+    return videos.filter((v) => v.name.toLowerCase().includes(term));
+  }, [videos, search]);
 
   function goNext() {
     if (nextCursor === null) {
@@ -169,9 +226,33 @@ export default function ProfileGrid() {
     }
   }
 
+  function openFilters() {
+    setDraftSector(sector);
+    setDraftLocation(location);
+    setDraftCertified(certified);
+    setFiltersOpen((open) => !open);
+  }
+
+  function applyFilters() {
+    setSector(draftSector);
+    setLocation(draftLocation.trim());
+    setCertified(draftCertified);
+    setPage(0);
+    setPageCursors([null]);
+    setFiltersOpen(false);
+  }
+
   function resetFilters() {
     setSearch("");
-    setSort("recent");
+    setSector("");
+    setLocation("");
+    setCertified("all");
+    setDraftSector("");
+    setDraftLocation("");
+    setDraftCertified("all");
+    setPage(0);
+    setPageCursors([null]);
+    setFiltersOpen(false);
   }
 
   const hasAnyVideos = videos.length > 0;
@@ -206,26 +287,39 @@ export default function ProfileGrid() {
                   className="w-full rounded-lg border border-bordure-defaut bg-fond-neutre py-2 pl-10 pr-4 font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:border-bleu-institutionnel focus:outline-none focus:ring-2 focus:ring-fond-bleu-clair"
                 />
               </div>
-              <div className="flex w-full items-center gap-2 sm:w-auto">
-                <button
-                  type="button"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-bordure-defaut bg-fond-page px-4 py-2 font-sans text-sm font-medium text-texte-secondaire transition-colors hover:bg-fond-neutre hover:text-bleu-institutionnel sm:flex-none"
-                >
-                  <SettingsIcon className="size-4" />
-                  Filtres
-                </button>
-                <select
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value as SortKey)}
-                  className="flex-1 cursor-pointer rounded-lg border border-bordure-defaut bg-fond-page px-4 py-2 font-sans text-sm font-medium text-texte-secondaire transition-colors hover:bg-fond-neutre focus:border-bleu-institutionnel focus:outline-none focus:ring-2 focus:ring-fond-bleu-clair sm:flex-none"
-                >
-                  <option value="recent">Plus récents</option>
-                  <option value="relevance">Pertinence</option>
-                  <option value="views">Plus vus</option>
-                </select>
-              </div>
+              <button
+                type="button"
+                onClick={openFilters}
+                aria-expanded={filtersOpen}
+                className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 font-sans text-sm font-medium transition-colors sm:w-auto ${
+                  filtersOpen || activeFilterCount > 0
+                    ? "border-bleu-institutionnel/20 bg-fond-bleu-clair text-bleu-institutionnel"
+                    : "border-bordure-defaut bg-fond-page text-texte-secondaire hover:bg-fond-neutre hover:text-bleu-institutionnel"
+                }`}
+              >
+                <SettingsIcon className="size-4" />
+                Filtres
+                {activeFilterCount > 0 ? (
+                  <span className="flex size-5 items-center justify-center rounded-full bg-bleu-institutionnel font-sans text-[10px] font-semibold text-texte-inverse">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </button>
             </div>
           </div>
+
+          {filtersOpen ? (
+            <CatalogFilters
+              sector={draftSector}
+              location={draftLocation}
+              certified={draftCertified}
+              onSector={setDraftSector}
+              onLocation={setDraftLocation}
+              onCertified={setDraftCertified}
+              onApply={applyFilters}
+              onReset={resetFilters}
+            />
+          ) : null}
         </div>
       </header>
 
@@ -256,6 +350,104 @@ export default function ProfileGrid() {
         )}
       </main>
     </div>
+  );
+}
+
+function CatalogFilters({
+  sector,
+  location,
+  certified,
+  onSector,
+  onLocation,
+  onCertified,
+  onApply,
+  onReset,
+}: {
+  sector: string;
+  location: string;
+  certified: CertifiedFilter;
+  onSector: (value: string) => void;
+  onLocation: (value: string) => void;
+  onCertified: (value: CertifiedFilter) => void;
+  onApply: () => void;
+  onReset: () => void;
+}) {
+  const fieldClass =
+    "w-full rounded-lg border border-bordure-defaut bg-fond-page px-3 py-2 font-sans text-sm text-texte-principal focus:border-bleu-institutionnel focus:outline-none focus:ring-2 focus:ring-fond-bleu-clair";
+
+  return (
+    <form
+      className="mt-4 grid gap-3 rounded-xl border border-bordure-defaut bg-fond-neutre/60 p-4 sm:grid-cols-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onApply();
+      }}
+    >
+      <label className="flex flex-col gap-1">
+        <span className="font-sans text-xs font-semibold uppercase tracking-wider text-texte-tertiaire">
+          Secteur
+        </span>
+        <select
+          value={sector}
+          onChange={(event) => onSector(event.target.value)}
+          className={fieldClass}
+        >
+          <option value="">Tous</option>
+          {SECTOR_OPTIONS.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="font-sans text-xs font-semibold uppercase tracking-wider text-texte-tertiaire">
+          Localisation
+        </span>
+        <input
+          type="text"
+          value={location}
+          onChange={(event) => onLocation(event.target.value)}
+          placeholder="Ville ou code postal"
+          autoComplete="off"
+          className={fieldClass}
+        />
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="font-sans text-xs font-semibold uppercase tracking-wider text-texte-tertiaire">
+          Certification
+        </span>
+        <select
+          value={certified}
+          onChange={(event) =>
+            onCertified(event.target.value as CertifiedFilter)
+          }
+          className={fieldClass}
+        >
+          <option value="all">Tous</option>
+          <option value="true">Certifiés</option>
+          <option value="false">Non certifiés</option>
+        </select>
+      </label>
+
+      <div className="flex flex-wrap justify-end gap-2 sm:col-span-3">
+        <button
+          type="button"
+          onClick={onReset}
+          className="rounded-lg border border-bordure-defaut bg-fond-page px-4 py-2 font-sans text-sm font-medium text-texte-secondaire transition-colors hover:bg-fond-neutre hover:text-texte-principal"
+        >
+          Réinitialiser
+        </button>
+        <button
+          type="submit"
+          className="rounded-lg bg-bleu-institutionnel px-4 py-2 font-sans text-sm font-medium text-texte-inverse shadow-sm transition-colors hover:brightness-110"
+        >
+          Appliquer
+        </button>
+      </div>
+    </form>
   );
 }
 
