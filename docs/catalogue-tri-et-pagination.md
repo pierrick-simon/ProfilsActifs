@@ -22,20 +22,28 @@ Implémenté dans [lib/catalog.ts](../lib/catalog.ts) et utilisé tel quel par
 
 ## 2. Critères de filtrage et de tri disponibles
 
-Seuls des critères professionnels sont exposés :
+Filtres acceptés par `GET /api/videos` (implémentés dans
+[lib/catalog.ts](../lib/catalog.ts), fonction `parseCatalogFilters`) :
 
-- `secteur` (`activitySector`)
-- `localisation`
-- `certification` (date de certification, non nulle = certifié)
-- `validated` (filtre technique de modération, pas un critère recruteur)
+- `sector` — une valeur de l'enum `ActivitySector` (ex. `TECHNOLOGY`), rejetée avec une
+  erreur 400 si elle n'en fait pas partie.
+- `location` — recherche insensible à la casse sur la localisation du profil
+  (`contains`, pas une correspondance exacte).
+- `certified` — `true` ou `false` ; filtre sur la présence d'une date de certification.
+- `validated` (filtre technique de modération, pas un critère recruteur).
 
-Le paramètre `sortBy` de l'API n'accepte aujourd'hui qu'une seule valeur, `date`
-(le tri par défaut ci-dessus) — toute autre valeur est rejetée avec une erreur 400.
-**Aucun critère de popularité (vues, likes, messages) n'est accepté par l'API**, même
-si le compteur de vues existe par ailleurs dans le modèle de données à d'autres fins.
-Étendre `sortBy` à secteur/localisation/certification est possible mais volontairement
-hors de cette livraison : ces colonnes acceptent des valeurs nulles, ce qui demande une
-gestion de curseur plus fine pour rester garantie stable — à ne livrer que testée.
+Ces filtres se combinent avec le tri : ils réduisent l'ensemble des profils avant
+application de l'`ORDER BY` et de la pagination par curseur (section 1), donc la
+garantie de stabilité décrite en section 4 s'applique aussi bien avec filtres qu'sans.
+
+Le paramètre `sortBy`, lui, n'accepte aujourd'hui qu'une seule valeur, `date` (le tri
+par défaut ci-dessus) — toute autre valeur est rejetée avec une erreur 400.
+**Aucun critère de popularité (vues, likes, messages) n'est accepté par l'API**, ni
+comme filtre ni comme tri, même si le compteur de vues existe par ailleurs dans le
+modèle de données à d'autres fins. Étendre `sortBy` pour trier explicitement par
+secteur/localisation/certification (et non plus seulement filtrer dessus) reste hors de
+cette livraison : ces colonnes acceptent des valeurs nulles, ce qui demande une gestion
+de curseur plus fine pour rester garantie stable — à ne livrer que testée.
 
 ## 3. Preuve de stabilité (double parcours)
 
