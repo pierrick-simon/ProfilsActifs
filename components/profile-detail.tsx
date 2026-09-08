@@ -47,6 +47,7 @@ type UserProfile = {
   video_status: string | null;
   video_views: number | null;
   video_validated: boolean | null;
+  is_favorited?: boolean;
 };
 
 function formatViews(count: number): string {
@@ -88,6 +89,7 @@ export default function ProfileDetail({ userId }: { userId: string }) {
         const data: UserProfile = await response.json();
         if (alive) {
           setProfile(data);
+          setFavorited(Boolean(data.is_favorited));
         }
       } catch {
         if (alive) {
@@ -104,34 +106,6 @@ export default function ProfileDetail({ userId }: { userId: string }) {
       alive = false;
     };
   }, [userId, showError]);
-
-  useEffect(() => {
-    if (!isRecruiter || isOwnProfile) {
-      return;
-    }
-
-    let alive = true;
-    async function loadFavorite() {
-      try {
-        const response = await fetch("/api/user/favories");
-        if (!response.ok) {
-          return;
-        }
-        const data = await response.json();
-        const items: { userId?: string }[] = Array.isArray(data.items)
-          ? data.items
-          : [];
-        if (alive) {
-          setFavorited(items.some((item) => item.userId === userId));
-        }
-      } catch {
-      }
-    }
-    loadFavorite();
-    return () => {
-      alive = false;
-    };
-  }, [isRecruiter, isOwnProfile, userId]);
 
   async function handleShare() {
     try {

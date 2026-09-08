@@ -5,6 +5,7 @@ import { useToast } from "@/components/toast";
 import BackButton from "@/components/back-button";
 import { ProfileCard, type ProfileVideo } from "@/components/profile-grid";
 import { HeartIcon } from "@/components/icons";
+import { authClient } from "@/lib/auth_client";
 
 const SECTOR_LABELS: Record<string, string> = {
   TECHNOLOGY: "Technologie",
@@ -19,42 +20,70 @@ const SECTOR_LABELS: Record<string, string> = {
   OTHER: "Autre",
 };
 
-type FavoriteItem = {
+type UserProfile = {
   id: string;
-  userId: string;
-  name: string;
-  location: string | null;
-  role: string | null;
-  url: string | null;
-  views: number;
+  first_name?: string;
+  last_name?: string;
+  city?: string;
+  activity?: string | null;
+  video_url?: string | null;
+  video_views?: number | null;
+  favorites?: string[];
 };
 
 export default function FavoritesGrid() {
   const { showError } = useToast();
+  const { data: session, isPending } = authClient.useSession();
   const [videos, setVideos] = useState<ProfileVideo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isPending) {
+      return;
+    }
+
+    const viewerId = session?.user?.id;
+    if (!viewerId) {
+      setVideos([]);
+      setLoading(false);
+      return;
+    }
+
     let alive = true;
     async function load() {
       setLoading(true);
       try {
-        const response = await fetch("/api/user/favories");
-        if (!response.ok) {
+        const selfResponse = await fetch(`/api/user/${viewerId}`);
+        if (!selfResponse.ok) {
           throw new Error("favorites unavailable");
         }
-        const data = await response.json();
-        const list: ProfileVideo[] = (
-          Array.isArray(data.items) ? (data.items as FavoriteItem[]) : []
-        ).map((item) => ({
-          id: item.id,
-          url: item.url,
-          name: item.name,
-          views: item.views,
-          role: item.role ? (SECTOR_LABELS[item.role] ?? item.role) : null,
-          location: item.location,
-          userId: item.userId,
-        }));
+        const self: UserProfile = await selfResponse.json();
+        const ids = Array.isArray(self.favorites) ? self.favorites : [];
+
+        const profiles = await Promise.all(
+          ids.map(async (id) => {
+            const response = await fetch(`/api/user/${id}`);
+            if (!response.ok) {
+              return null;
+            }
+            return (await response.json()) as UserProfile;
+          }),
+        );
+
+        const list: ProfileVideo[] = profiles
+          .filter((profile): profile is UserProfile => profile !== null)
+          .map((profile) => ({
+            id: profile.id,
+            url: profile.video_url ?? null,
+            name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
+            views: typeof profile.video_views === "number" ? profile.video_views : 0,
+            role: profile.activity
+              ? (SECTOR_LABELS[profile.activity] ?? profile.activity)
+              : null,
+            location: profile.city ?? null,
+            userId: profile.id,
+          }));
+
         if (alive) {
           setVideos(list);
         }
@@ -72,7 +101,7 @@ export default function FavoritesGrid() {
     return () => {
       alive = false;
     };
-  }, [showError]);
+  }, [isPending, session?.user?.id, showError]);
 
   return (
     <div className="flex w-full flex-1 flex-col bg-fond-neutre">
