@@ -1,5 +1,4 @@
 import ChatConversation from "@/components/chat-conversation";
-import RequireRegistration from "@/components/require-registration";
 
 export default async function ConversationPage({
   params,
@@ -11,9 +10,5 @@ export default async function ConversationPage({
   const { id } = await params;
   const { name } = await searchParams;
 
-  return (
-    <RequireRegistration>
-      <ChatConversation contactId={id} contactName={name} />
-    </RequireRegistration>
-  );
+  return <ChatConversation contactId={id} contactName={name} />;
 }

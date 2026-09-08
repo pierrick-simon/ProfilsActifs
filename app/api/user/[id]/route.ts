@@ -38,9 +38,42 @@ export async function GET(
     },
   });
 
-  if (!user || user.role === "recruiter") {
+  if (!user) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  const isOwnProfile = session.user.id === userId;
+
+  if (user.role === "recruiter" && !isOwnProfile) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const favoriteIds = isOwnProfile
+    ? (
+        await prisma.favory.findMany({
+          where: { favoriterUserId: session.user.id },
+          orderBy: { timestamp: "desc" },
+          select: { favoredUserId: true },
+        })
+      ).map((row) => row.favoredUserId)
+    : undefined;
+
+  if (user.role === "recruiter") {
+    return NextResponse.json(
+      { id: user.id, favorites: favoriteIds ?? [] },
+      { status: 200 },
+    );
+  }
+
+  const existingFavorite = await prisma.favory.findUnique({
+    where: {
+      favoredUserId_favoriterUserId: {
+        favoredUserId: userId,
+        favoriterUserId: session.user.id,
+      },
+    },
+    select: { id: true },
+  });
 
   const city = user.localisation.split(",")[0].trim();
 
@@ -82,6 +115,8 @@ export async function GET(
       video_status: playback?.status ?? null,
       video_views: latestVideo?.views ?? null,
       video_validated: latestVideo?.validated ?? null,
+      is_favorited: Boolean(existingFavorite),
+      ...(favoriteIds ? { favorites: favoriteIds } : {}),
     },
     { status: 200 },
   );

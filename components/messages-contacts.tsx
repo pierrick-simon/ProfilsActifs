@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
+import { usePathname } from "next/navigation";
+import { ChevronRightIcon } from "@/components/icons";
 import { useToast } from "@/components/toast";
+import BackButton from "@/components/back-button";
 
 type Contact = {
   id: string;
@@ -26,9 +27,13 @@ function formatLastMessage(iso: string | null): string {
     : date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
-export default function MessagesContacts() {
-  const router = useRouter();
+export default function MessagesContacts({
+  variant = "page",
+}: {
+  variant?: "page" | "sidebar";
+}) {
   const { showError } = useToast();
+  const pathname = usePathname();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,18 +66,27 @@ export default function MessagesContacts() {
     };
   }, [showError]);
 
+  const isSidebar = variant === "sidebar";
+
   return (
-    <main className="flex flex-1 justify-center bg-fond-page md:bg-fond-neutre md:p-4 lg:p-6">
-      <div className="flex w-full flex-col overflow-hidden bg-fond-page md:max-w-2xl md:rounded-2xl md:border md:border-bordure-defaut md:shadow-sm">
+    <main
+      className={
+        isSidebar
+          ? "flex min-h-0 flex-1 flex-col bg-fond-page"
+          : "flex min-h-0 flex-1 justify-center bg-fond-page"
+      }
+    >
+      <div
+        className={
+          isSidebar
+            ? "flex min-h-0 w-full flex-1 flex-col"
+            : "flex w-full flex-1 flex-col overflow-hidden bg-fond-page"
+        }
+      >
         <header className="flex items-center gap-3.5 border-b border-bordure-defaut px-4 py-3">
-          <button
-            type="button"
-            aria-label="Retour au fil"
-            onClick={() => router.push("/")}
-            className="flex size-9 items-center justify-center rounded-lg text-bleu-institutionnel transition-colors hover:bg-fond-neutre"
-          >
-            <ChevronLeftIcon className="size-5" />
-          </button>
+          {!isSidebar && (
+            <BackButton href="/" label="Retour" />
+          )}
           <span className="font-sans text-lg font-medium leading-tight text-texte-principal">
             Messages
           </span>
@@ -91,11 +105,14 @@ export default function MessagesContacts() {
             contacts.map((contact) => {
               const name = contact.name || "Utilisateur";
               const initial = name.charAt(0).toUpperCase();
+              const active = pathname === `/messages/${contact.id}`;
               return (
                 <Link
                   key={contact.id}
                   href={`/messages/${contact.id}?name=${encodeURIComponent(name)}`}
-                  className="flex items-center gap-3 border-b border-bordure-defaut px-4 py-3 transition-colors last:border-b-0 hover:bg-fond-neutre"
+                  className={`flex items-center gap-3 border-b border-bordure-defaut px-4 py-3 transition-colors last:border-b-0 hover:bg-fond-neutre ${
+                    active ? "bg-fond-neutre" : ""
+                  }`}
                 >
                   <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-fond-bleu-clair font-sans text-sm font-medium text-bleu-institutionnel">
                     {contact.image ? (

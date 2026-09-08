@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/toast";
 import SiteFooter from "@/components/site-footer";
 import CandidateNotice from "@/components/candidate-notice";
+import AccountMenu from "@/components/account-menu";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <CandidateNotice />
         <ToastProvider>
           <div className="flex flex-1 flex-col">{children}</div>
+          <AccountMenu />
         </ToastProvider>
         <SiteFooter />
       </body>

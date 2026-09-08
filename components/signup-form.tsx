@@ -50,9 +50,9 @@ export default function SignupForm() {
       localisation: role === "candidat" ? address : "",
       acceptedTerms: acceptTerms,
     });
-    setSubmitting(false);
 
     if (authError) {
+      setSubmitting(false);
       showError(
         authError.message ?? "Impossible de créer le compte.",
         "Inscription échouée",
@@ -60,8 +60,24 @@ export default function SignupForm() {
       return;
     }
 
+    // better-auth refuse role en input : le sélecteur du formulaire
+    // est la seule source, persistée ici après création du compte.
+    if (role === "recruteur") {
+      const roleResponse = await fetch("/api/user/role", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "recruiter" }),
+      });
+      if (!roleResponse.ok) {
+        setSubmitting(false);
+        showError(
+          "Le compte a été créé, mais le rôle recruteur n'a pas pu être enregistré.",
+          "Inscription incomplète",
+        );
+        return;
+      }
+    }
 
-    localStorage.setItem("role", role);
     window.location.assign(
       role === "candidat" ? "/inscription/video" : "/",
     );

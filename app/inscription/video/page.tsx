@@ -93,14 +93,13 @@ export default function VideoUploadPage() {
       </header>
 
       <div className="px-11 pt-8">
-        <button
-          type="button"
-          onClick={() => router.push("/inscription")}
+        <Link
+          href="/inscription/questions"
           className="inline-flex items-center gap-0.5 rounded-lg border border-bordure-defaut bg-fond-page py-1.5 pl-1.5 pr-2.5 font-sans text-sm font-medium text-texte-secondaire shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] transition-colors hover:bg-fond-neutre"
         >
           <ChevronLeftIcon className="size-5" />
-          Retour
-        </button>
+          Passer cette étape
+        </Link>
       </div>
 
       <div className="flex min-h-0 flex-1 justify-center px-6 py-6">
