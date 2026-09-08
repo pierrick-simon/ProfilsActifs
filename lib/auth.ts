@@ -1,7 +1,8 @@
 import { betterAuth, APIError } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./db";
-import { admin } from "better-auth/plugins";
+import {admin as adminPlugin} from "better-auth/plugins";
+import {ac, recruiter, candidate, admin} from "./auth/permissions";
 import { isAtLeast16 } from "./age-gate";
 
 function assertAdultUser(user: Record<string, unknown>) {
@@ -65,6 +66,9 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-      admin()
+      adminPlugin({
+          ac,
+          roles: {recruiter, candidate, admin}
+      })
   ]
 });
