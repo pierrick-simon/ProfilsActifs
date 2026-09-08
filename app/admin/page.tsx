@@ -15,6 +15,7 @@ import {
 } from "@/components/icons";
 import RejectVideoModal from "@/components/reject-video-modal";
 import UserTable from "@/components/user-table";
+import BackButton from "@/components/back-button";
 
 // Fausses données de démonstration : la page n'est pour l'instant qu'une
 // maquette (aucun appel API). Les compteurs et vidéos seront branchés au
@@ -49,6 +50,7 @@ export default function AdminPage() {
       <header className="px-6 py-6 md:px-10">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
+            <BackButton href="/" label="Retour" />
             <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-bleu-institutionnel to-[#5e1016] text-texte-inverse shadow-sm">
               <ShieldCheckIcon className="size-6" />
             </span>
