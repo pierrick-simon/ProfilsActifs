@@ -11,7 +11,7 @@ import {
   SearchIcon,
   SettingsIcon,
 } from "@/components/icons";
-import { useRole } from "@/hooks/use-role";
+import { useViewerRole } from "@/hooks/use-role";
 import { useToast } from "@/components/toast";
 import { authClient } from "@/lib/auth_client";
 
@@ -33,7 +33,7 @@ const SECTOR_LABELS: Record<string, string> = {
 
 type SortKey = "recent" | "relevance" | "views";
 
-type ProfileVideo = {
+export type ProfileVideo = {
   id: string;
   url: string | null;
   name: string;
@@ -64,7 +64,8 @@ function formatViews(count: number): string {
 }
 
 export default function ProfileGrid() {
-  const isRecruteur = useRole() === "recruteur";
+  const { isRecruiter, isAdmin, isPending: rolePending } = useViewerRole();
+  const canBrowse = isRecruiter || isAdmin;
   const { showError } = useToast();
   const { data: session, isPending } = authClient.useSession();
   const userId = session?.user?.id ?? null;
@@ -78,7 +79,7 @@ export default function ProfileGrid() {
   const [sort, setSort] = useState<SortKey>("recent");
 
   useEffect(() => {
-    if (isPending) {
+    if (isPending || rolePending) {
       return;
     }
 
@@ -86,7 +87,7 @@ export default function ProfileGrid() {
     async function load() {
       setLoading(true);
       try {
-        const base = isRecruteur
+        const base = canBrowse
           ? `/api/videos?limit=${PAGE_SIZE}`
           : userId
             ? `/api/videos?userId=${userId}&limit=${PAGE_SIZE}`
@@ -139,7 +140,7 @@ export default function ProfileGrid() {
     return () => {
       alive = false;
     };
-  }, [page, pageCursors, isRecruteur, userId, isPending, showError]);
+  }, [page, pageCursors, canBrowse, userId, isPending, rolePending, showError]);
 
   const displayed = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -248,7 +249,7 @@ export default function ProfileGrid() {
               onGoTo={goToPage}
             />
           </>
-        ) : !hasAnyVideos && !isRecruteur ? (
+        ) : !hasAnyVideos && !canBrowse ? (
           <CandidateEmpty />
         ) : (
           <NoResults onReset={resetFilters} />
@@ -258,7 +259,7 @@ export default function ProfileGrid() {
   );
 }
 
-function ProfileCard({ video }: { video: ProfileVideo }) {
+export function ProfileCard({ video }: { video: ProfileVideo }) {
   const previewRef = useRef<HTMLVideoElement>(null);
   const [previewing, setPreviewing] = useState(false);
 
