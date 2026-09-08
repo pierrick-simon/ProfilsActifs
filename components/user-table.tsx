@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BanIcon,
   ChevronDownIcon,
@@ -9,10 +9,28 @@ import {
   EyeIcon,
   MapPinIcon,
   MoreIcon,
-  PlayIcon,
   SearchIcon,
   ShieldCheckIcon,
 } from "@/components/icons";
+import { authClient } from "@/lib/auth_client";
+import { useToast } from "@/components/toast";
+
+export type ListedUser = {
+  id: string;
+  name: string;
+  email: string;
+  role?: string | null;
+  banned?: boolean | null;
+  createdAt: string | Date;
+  localisation?: string | null;
+};
+
+export type ListedVideo = {
+  userId?: string;
+  url?: string | null;
+  createdAt?: string;
+  user?: { id?: string | null; localisation?: string | null } | null;
+};
 
 type AdminUser = {
   id: string;
@@ -23,112 +41,155 @@ type AdminUser = {
   joinedAt: string;
   joinedOrder: number;
   hasVideo: boolean;
+  videoUrl: string | null;
   isAdmin?: boolean;
   isBanned?: boolean;
 };
 
-const initialUsers: AdminUser[] = [
-  {
-    id: "1",
-    name: "Amina Koné",
-    email: "amina.kone@exemple.fr",
-    role: "candidat",
-    localisation: "Paris",
-    joinedAt: "15 juil. 2023",
-    joinedOrder: 1,
-    hasVideo: true,
-  },
-  {
-    id: "2",
-    name: "Lucas Martin",
-    email: "lucas.martin@exemple.fr",
-    role: "candidat",
-    localisation: "Lyon",
-    joinedAt: "17 juil. 2023",
-    joinedOrder: 2,
-    hasVideo: true,
-  },
-  {
-    id: "3",
-    name: "Sophia Nguyen",
-    email: "sophia.nguyen@exemple.fr",
-    role: "recruteur",
-    localisation: "Nantes",
-    joinedAt: "19 juil. 2023",
-    joinedOrder: 3,
-    hasVideo: false,
-  },
-  {
-    id: "4",
-    name: "Youssef Benali",
-    email: "youssef.benali@exemple.fr",
-    role: "candidat",
-    localisation: "Marseille",
-    joinedAt: "21 juil. 2023",
-    joinedOrder: 4,
-    hasVideo: true,
-  },
-  {
-    id: "5",
-    name: "Emma Dubois",
-    email: "emma.dubois@exemple.fr",
-    role: "recruteur",
-    localisation: "Lille",
-    joinedAt: "23 juil. 2023",
-    joinedOrder: 5,
-    hasVideo: false,
-  },
-  {
-    id: "6",
-    name: "Noah Garcia",
-    email: "noah.garcia@exemple.fr",
-    role: "candidat",
-    localisation: "Bordeaux",
-    joinedAt: "25 juil. 2023",
-    joinedOrder: 6,
-    hasVideo: true,
-  },
-  {
-    id: "7",
-    name: "Léa Rousseau",
-    email: "lea.rousseau@exemple.fr",
-    role: "candidat",
-    localisation: "Toulouse",
-    joinedAt: "27 juil. 2023",
-    joinedOrder: 7,
-    hasVideo: false,
-  },
-];
-
 type SortKey = "name" | "joined";
 type SortDir = "asc" | "desc";
 
-export default function UserTable() {
-  const [userList, setUserList] = useState<AdminUser[]>(initialUsers);
+function cityOf(localisation?: string | null): string {
+  if (!localisation || !localisation.trim()) {
+    return "—";
+  }
+  return localisation.split(",")[0].trim() || "—";
+}
+
+function formatJoined(createdAt: string | Date): string {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function latestVideoByUser(videos: ListedVideo[]): Map<string, ListedVideo> {
+  const latest = new Map<string, ListedVideo>();
+  for (const video of videos) {
+    const userId = video.userId ?? video.user?.id ?? null;
+    if (!userId) {
+      continue;
+    }
+    const previous = latest.get(userId);
+    if (!previous) {
+      latest.set(userId, video);
+      continue;
+    }
+    const nextTime = new Date(video.createdAt ?? 0).getTime();
+    const prevTime = new Date(previous.createdAt ?? 0).getTime();
+    if (nextTime >= prevTime) {
+      latest.set(userId, video);
+    }
+  }
+  return latest;
+}
+
+function mapUsers(users: ListedUser[], videos: ListedVideo[]): AdminUser[] {
+  const videosByUser = latestVideoByUser(videos);
+  return users.map((user) => {
+    const video = videosByUser.get(user.id);
+    const created = new Date(user.createdAt);
+    return {
+      id: user.id,
+      name: user.name || user.email,
+      email: user.email,
+      role: user.role === "recruiter" ? "recruteur" : "candidat",
+      localisation: cityOf(user.localisation || video?.user?.localisation),
+      joinedAt: formatJoined(user.createdAt),
+      joinedOrder: Number.isNaN(created.getTime()) ? 0 : created.getTime(),
+      hasVideo: Boolean(video?.url),
+      videoUrl: video?.url ?? null,
+      isAdmin: user.role === "admin",
+      isBanned: Boolean(user.banned),
+    };
+  });
+}
+
+export default function UserTable({
+  users,
+  videos,
+  loading,
+}: {
+  users: ListedUser[];
+  videos: ListedVideo[];
+  loading: boolean;
+}) {
+  const { showError } = useToast();
+  const [userList, setUserList] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "candidat" | "recruteur">(
     "all",
   );
   const [sortKey, setSortKey] = useState<SortKey>("joined");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  // Utilisateur dont on regarde la vidéo (null = popup fermé).
   const [preview, setPreview] = useState<AdminUser | null>(null);
-  // Utilisateur en cours de modération (null = modal fermé).
   const [moderating, setModerating] = useState<AdminUser | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
 
-  // Actions de modération (maquette : mise à jour locale, sans appel API).
-  function toggleAdmin(id: string) {
+  useEffect(() => {
+    setUserList(mapUsers(users, videos));
+  }, [users, videos]);
+
+  async function toggleAdmin(id: string) {
+    const user = userList.find((entry) => entry.id === id);
+    if (!user || actingId) {
+      return;
+    }
+    const nextAdmin = !user.isAdmin;
+    setActingId(id);
+    const { error } = await authClient.admin.setRole({
+      userId: id,
+      role: nextAdmin ? "admin" : "user",
+    });
+    setActingId(null);
+    if (error) {
+      showError(error.message ?? "Impossible de changer le rôle.");
+      return;
+    }
     setUserList((current) =>
-      current.map((user) =>
-        user.id === id ? { ...user, isAdmin: !user.isAdmin } : user,
+      current.map((entry) =>
+        entry.id === id ? { ...entry, isAdmin: nextAdmin } : entry,
       ),
     );
   }
 
-  function toggleBan(id: string) {
+  async function toggleBan(id: string) {
+    const user = userList.find((entry) => entry.id === id);
+    if (!user || actingId) {
+      return;
+    }
+    setActingId(id);
+    if (user.isBanned) {
+      const { error } = await authClient.admin.unbanUser({ userId: id });
+      setActingId(null);
+      if (error) {
+        showError(error.message ?? "Impossible de réactiver l'utilisateur.");
+        return;
+      }
+      setUserList((current) =>
+        current.map((entry) =>
+          entry.id === id ? { ...entry, isBanned: false } : entry,
+        ),
+      );
+      return;
+    }
+    const { error } = await authClient.admin.banUser({
+      userId: id,
+      banReason: "Banni par un administrateur",
+    });
+    setActingId(null);
+    if (error) {
+      showError(error.message ?? "Impossible de bannir l'utilisateur.");
+      return;
+    }
     setUserList((current) =>
-      current.map((user) =>
-        user.id === id ? { ...user, isBanned: !user.isBanned } : user,
+      current.map((entry) =>
+        entry.id === id ? { ...entry, isBanned: true } : entry,
       ),
     );
   }
@@ -213,7 +274,18 @@ export default function UserTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-bordure-defaut">
-            {rows.length > 0 ? (
+            {loading ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="bg-fond-neutre/40 px-6 py-12 text-center"
+                >
+                  <p className="font-sans text-sm text-texte-tertiaire">
+                    Chargement des utilisateurs…
+                  </p>
+                </td>
+              </tr>
+            ) : rows.length > 0 ? (
               rows.map((user) => (
                 <tr
                   key={user.id}
@@ -296,7 +368,9 @@ export default function UserTable() {
                 >
                   <SearchIcon className="mx-auto mb-2 size-7 text-texte-tertiaire" />
                   <p className="font-sans text-sm text-texte-tertiaire">
-                    Aucun utilisateur ne correspond à la recherche.
+                    {userList.length === 0
+                      ? "Aucun utilisateur inscrit."
+                      : "Aucun utilisateur ne correspond à la recherche."}
                   </p>
                 </td>
               </tr>
@@ -609,11 +683,22 @@ function UserVideoModal({
           </button>
         </div>
 
-        <div className="relative flex aspect-[3/4] w-full items-center justify-center bg-texte-principal">
-          <div className="absolute inset-0 bg-gradient-to-tr from-bleu-institutionnel/30 to-texte-principal" />
-          <span className="relative flex size-16 items-center justify-center rounded-full border border-white/20 bg-white/10 text-texte-inverse shadow-xl backdrop-blur-md">
-            <PlayIcon className="ml-0.5 size-7" />
-          </span>
+        <div className="relative aspect-[3/4] w-full bg-texte-principal">
+          {user.videoUrl ? (
+            <video
+              src={user.videoUrl}
+              controls
+              autoPlay
+              playsInline
+              className="absolute inset-0 size-full object-contain"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-bleu-institutionnel/30 to-texte-principal px-6 text-center">
+              <span className="font-sans text-sm font-medium text-texte-inverse/70">
+                Aucune vidéo disponible.
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

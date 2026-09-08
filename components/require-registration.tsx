@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth_client";
 
 // Protège les pages réservées aux utilisateurs connectés : sans session
-// better-auth valide, on renvoie vers l'inscription.
+// better-auth valide, on renvoie vers la landing.
 export default function RequireRegistration({
   children,
 }: {
@@ -16,7 +16,7 @@ export default function RequireRegistration({
 
   useEffect(() => {
     if (!isPending && !session) {
-      router.replace("/inscription");
+      router.replace("/landing");
     }
   }, [isPending, session, router]);
 

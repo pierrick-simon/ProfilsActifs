@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
       status: true,
       views: true,
       validated: true,
+      createdAt: true,
       userId: true,
       user: {
         select: {

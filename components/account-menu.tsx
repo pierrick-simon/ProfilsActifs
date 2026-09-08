@@ -1,31 +1,43 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { authClient } from "@/lib/auth_client";
-import { CheckIcon, ChevronRightIcon } from "@/components/icons";
+import { useViewerRole } from "@/hooks/use-role";
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  HeartIcon,
+  MailIcon,
+} from "@/components/icons";
 
-// Carte de compte en bas à gauche du fil : avatar, nom, e-mail et menu de
-// déconnexion. Remplace l'ancien bouton « Se déconnecter » du coin haut droit.
 export default function AccountMenu() {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session } = authClient.useSession();
+  const { isRecruiter, isAdmin } = useViewerRole();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  if (!session) {
+  const onAuthPage =
+    pathname.startsWith("/inscription") ||
+    pathname.startsWith("/connexion") ||
+    pathname.startsWith("/landing");
+
+  if (!session || onAuthPage) {
     return null;
   }
 
   const name = session.user.name || "Utilisateur";
   const image = session.user.image ?? null;
   const initial = name.charAt(0).toUpperCase();
+  const canBrowse = isRecruiter || isAdmin;
 
   async function handleSignOut() {
     setLoading(true);
     await authClient.signOut();
-    localStorage.removeItem("role");
     router.push("/connexion");
   }
 
@@ -41,6 +53,24 @@ export default function AccountMenu() {
             className="fixed inset-0 z-0 cursor-default"
           />
           <div className="absolute bottom-full left-0 z-10 mb-2 w-52 overflow-hidden rounded-xl border border-bordure-defaut bg-fond-page p-1 shadow-[0px_16px_32px_-12px_rgba(14,18,27,0.1)]">
+            <Link
+              href="/messages"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-texte-principal transition-colors hover:bg-fond-neutre"
+            >
+              <MailIcon className="size-4 text-texte-tertiaire" />
+              Messages
+            </Link>
+            {canBrowse && (
+              <Link
+                href="/favoris"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-texte-principal transition-colors hover:bg-fond-neutre"
+              >
+                <HeartIcon className="size-4 text-texte-tertiaire" />
+                Favoris
+              </Link>
+            )}
             <button
               type="button"
               onClick={handleSignOut}

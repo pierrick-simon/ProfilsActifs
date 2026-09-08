@@ -1,17 +1,18 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { authClient } from "@/lib/auth_client";
 
+export function useViewerRole() {
+  const { data: session, isPending } = authClient.useSession();
+  const role = session?.user?.role ?? null;
+  const isRecruiter = role === "recruiter";
+  const isAdmin = role === "admin";
 
-function subscribe(callback: () => void) {
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
-}
-
-export function useRole(): string | null {
-  return useSyncExternalStore(
-    subscribe,
-    () => localStorage.getItem("role"),
-    () => null,
-  );
+  return {
+    role,
+    isRecruiter,
+    isAdmin,
+    isCandidate: Boolean(session) && !isRecruiter && !isAdmin,
+    isPending,
+  };
 }
