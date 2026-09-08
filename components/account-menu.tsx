@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -10,6 +10,7 @@ import {
   CheckIcon,
   ChevronRightIcon,
   HeartIcon,
+  InfoIcon,
   MailIcon,
 } from "@/components/icons";
 
@@ -17,9 +18,42 @@ export default function AccountMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = authClient.useSession();
-  const { isRecruiter, isAdmin } = useViewerRole();
+  const { isRecruiter, isAdmin, isCandidate } = useViewerRole();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [needsQuestionnaire, setNeedsQuestionnaire] = useState(false);
+
+  useEffect(() => {
+    if (!session || !isCandidate) {
+      setNeedsQuestionnaire(false);
+      return;
+    }
+
+    let alive = true;
+    async function load() {
+      try {
+        const response = await fetch(`/api/user/${session.user.id}`);
+        if (!response.ok) {
+          if (alive) {
+            setNeedsQuestionnaire(true);
+          }
+          return;
+        }
+        const data = await response.json();
+        if (alive) {
+          setNeedsQuestionnaire(!data.certification_date);
+        }
+      } catch {
+        if (alive) {
+          setNeedsQuestionnaire(true);
+        }
+      }
+    }
+    load();
+    return () => {
+      alive = false;
+    };
+  }, [session, isCandidate]);
 
   const onAuthPage =
     pathname.startsWith("/inscription") ||
@@ -61,6 +95,16 @@ export default function AccountMenu() {
               <MailIcon className="size-4 text-texte-tertiaire" />
               Messages
             </Link>
+            {needsQuestionnaire && (
+              <Link
+                href="/inscription/questions"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-texte-principal transition-colors hover:bg-fond-neutre"
+              >
+                <InfoIcon className="size-4 text-texte-tertiaire" />
+                Questionnaire
+              </Link>
+            )}
             {canBrowse && (
               <Link
                 href="/favoris"
