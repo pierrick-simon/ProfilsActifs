@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { fileTypeFromBuffer } from "file-type";
 import { auth } from "@/lib/auth";
+import { CATALOG_ORDER_BY, catalogCursorWhere, decodeCatalogCursor, nextCatalogCursor } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { ALLOWED_VIDEO_MIME_TYPES, extensionForMimeType, MAX_VIDEO_SIZE_BYTES } from "@/lib/storage";
 import { getActiveVideoProvider } from "@/lib/video-provider";
@@ -18,8 +19,20 @@ export async function GET(request: NextRequest) {
   const isOwnVideos = requestedUserId === session.user.id;
   const isAdmin = session.user.role === "admin";
   const validatedParam = searchParams.get("validated");
-  const cursor = searchParams.get("cursor");
   const limit = Math.min(Number(searchParams.get("limit") ?? 20) || 20, 50);
+
+  // Liste blanche stricte : seul un critère professionnel peut un jour s'ajouter
+  // ici. Aucun critère de popularité (vues, likes...) ne doit devenir un sortBy valide.
+  const sortBy = searchParams.get("sortBy") ?? "date";
+  if (sortBy !== "date") {
+    return NextResponse.json({ error: "Critère de tri non pris en charge" }, { status: 400 });
+  }
+
+  const cursorParam = searchParams.get("cursor");
+  const cursor = cursorParam ? decodeCatalogCursor(cursorParam) : null;
+  if (cursorParam && !cursor) {
+    return NextResponse.json({ error: "Curseur de pagination invalide" }, { status: 400 });
+  }
 
   const videos = await prisma.video.findMany({
     where: {
@@ -29,10 +42,10 @@ export async function GET(request: NextRequest) {
           ? { validated: validatedParam === "true" }
           : {}
         : { validated: true }),
+      ...catalogCursorWhere(cursor),
     },
-    orderBy: { id: "asc" },
+    orderBy: CATALOG_ORDER_BY,
     take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: {
       id: true,
       provider: true,
@@ -48,6 +61,7 @@ export async function GET(request: NextRequest) {
           image: true,
           activitySector: true,
           localisation: true,
+          updatedAt: true,
         },
       },
     },
@@ -68,7 +82,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     items: resolvedItems,
-    nextCursor: hasMore ? items[items.length - 1].id : null,
+    nextCursor: hasMore ? nextCatalogCursor(items[items.length - 1]) : null,
   });
 }
 

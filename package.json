@@ -9,7 +9,8 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "test": "vitest run",
-    "migrate:video-storage": "tsx scripts/migrate-video-storage.ts"
+    "migrate:video-storage": "tsx scripts/migrate-video-storage.ts",
+    "verify:catalog-order": "tsx scripts/verify-catalog-order.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
