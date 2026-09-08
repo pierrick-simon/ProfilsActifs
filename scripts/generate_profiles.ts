@@ -1,6 +1,7 @@
 import {execFileSync, execFile} from "child_process";
 import {promisify} from "util";
 import {auth} from "@/lib/auth";
+import {prisma} from "@/lib/db";
 import prompts from "prompts";
 import {faker} from "@faker-js/faker";
 import {randomUUID} from "crypto";
@@ -257,21 +258,22 @@ async function generateRandomUser(
             .split("T")[0];
 
     try {
-        await auth.api.createUser({
-            headers,
-            body: {
-                email: user.email,
-                password: user.password,
-                name: `${firstName} ${lastName}`,
-                role,
-                data: {
-                    emailVerified: true,
-                    acceptedTerms: true,
-                    localisation: userLocalisation,
-                    dateOfBirth: userDateOfBirth,
+        const {user: createdUser} =
+            await auth.api.createUser({
+                headers,
+                body: {
+                    email: user.email,
+                    password: user.password,
+                    name: `${firstName} ${lastName}`,
+                    role,
+                    data: {
+                        emailVerified: true,
+                        acceptedTerms: true,
+                        localisation: userLocalisation,
+                        dateOfBirth: userDateOfBirth,
+                    },
                 },
-            },
-        });
+            });
 
         if (role === "candidate") {
             await mkdir("./tmp", {
@@ -297,9 +299,26 @@ async function generateRandomUser(
                 const provider =
                     getActiveVideoProvider();
 
-                await provider.store({
-                    bytes,
-                    mimeType,
+                const providerId =
+                    await provider.store({
+                        bytes,
+                        mimeType,
+                    });
+
+                const initialStatus =
+                    await provider.status(providerId);
+
+                await prisma.video.create({
+                    data: {
+                        id: randomUUID(),
+                        provider: provider.name,
+                        providerId,
+                        status: initialStatus.status.toUpperCase() as
+                            "PENDING" | "READY" | "FAILED",
+                        userId: createdUser.id,
+                        views: 0,
+                        validated: true,
+                    },
                 });
             } finally {
                 await rm(outputPath, {
