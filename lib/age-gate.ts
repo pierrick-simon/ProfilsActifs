@@ -8,11 +8,27 @@ export function getMinorAgeCutoffs(now: Date = new Date()) {
   return { cutoff16, cutoff18 };
 }
 
-/**
- * Generates the Prisma WHERE filter for age-gated video visibility.
- * If requester is a recruiter, no age filter is applied.
- * Otherwise, videos owned by users aged 16 to 17 (inclusive) are excluded (18+ and <16 visible to everyone).
- */
+export function isAtLeast16(
+  dateOfBirth: Date | string,
+  now: Date = new Date(),
+): boolean {
+  const birth = new Date(dateOfBirth);
+  if (Number.isNaN(birth.getTime())) {
+    return false;
+  }
+  const { cutoff16 } = getMinorAgeCutoffs(now);
+  return birth <= cutoff16;
+}
+
+export function maxBirthDateInput(now: Date = new Date()): string {
+  const { cutoff16 } = getMinorAgeCutoffs(now);
+  const year = cutoff16.getFullYear();
+  const month = String(cutoff16.getMonth() + 1).padStart(2, "0");
+  const day = String(cutoff16.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+
 export function getAgeGatedWhereClause(isRecruiter: boolean, now: Date = new Date()) {
   if (isRecruiter) {
     return {};
@@ -30,10 +46,7 @@ export function getAgeGatedWhereClause(isRecruiter: boolean, now: Date = new Dat
   };
 }
 
-/**
- * Single-row equivalent of `getAgeGatedWhereClause`, for endpoints that already
- * loaded one video/profile and need a boolean instead of a Prisma filter.
- */
+
 export function isAgeGateBlocked(
   dateOfBirth: Date,
   isRecruiter: boolean,

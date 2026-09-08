@@ -145,14 +145,14 @@ export default function ChatConversation({
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <main className="flex flex-1 justify-center bg-fond-page md:bg-fond-neutre md:p-4 lg:p-6">
-      <div className="flex w-full flex-col overflow-hidden bg-fond-page md:max-w-2xl md:rounded-2xl md:border md:border-bordure-defaut md:shadow-sm">
+    <main className="flex min-h-0 flex-1 flex-col bg-fond-page">
+      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-fond-page">
         <header className="flex items-center gap-3.5 border-b border-bordure-defaut px-4 py-3">
           <button
             type="button"
             aria-label="Retour aux messages"
             onClick={() => router.push("/messages")}
-            className="flex size-9 items-center justify-center rounded-lg text-bleu-institutionnel transition-colors hover:bg-fond-neutre"
+            className="flex size-9 items-center justify-center rounded-lg text-bleu-institutionnel transition-colors hover:bg-fond-neutre lg:hidden"
           >
             <ChevronLeftIcon className="size-5" />
           </button>

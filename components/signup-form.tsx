@@ -12,11 +12,12 @@ import {
   GlobeIcon,
   LockIcon,
   MailIcon,
-  MapPinIcon,
   UserIcon,
 } from "@/components/icons";
 import AuthUserBadge from "@/components/auth-user-badge";
+import CommuneField from "@/components/commune-field";
 import { authClient } from "@/lib/auth_client";
+import { isAtLeast16, maxBirthDateInput } from "@/lib/age-gate";
 import { useToast } from "@/components/toast";
 
 
@@ -29,6 +30,7 @@ export default function SignupForm() {
   const [birthDate, setBirthDate] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [addressPicked, setAddressPicked] = useState(false);
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,19 +42,34 @@ export default function SignupForm() {
       return;
     }
 
+    if (role === "candidat" && !addressPicked) {
+      showError("Choisissez une commune dans la liste proposée.");
+      return;
+    }
+
+    const parts = birthDate.split("-").map(Number);
+    const dateOfBirth =
+      parts.length === 3
+        ? new Date(parts[0], parts[1] - 1, parts[2])
+        : new Date(birthDate);
+    if (!isAtLeast16(dateOfBirth)) {
+      showError("Vous devez avoir au moins 16 ans pour vous inscrire.");
+      return;
+    }
+
     setSubmitting(true);
 
     const { error: authError } = await authClient.signUp.email({
       name,
       email,
       password,
-      dateOfBirth: new Date(birthDate),
+      dateOfBirth,
       localisation: role === "candidat" ? address : "",
       acceptedTerms: acceptTerms,
     });
-    setSubmitting(false);
 
     if (authError) {
+      setSubmitting(false);
       showError(
         authError.message ?? "Impossible de créer le compte.",
         "Inscription échouée",
@@ -60,8 +77,24 @@ export default function SignupForm() {
       return;
     }
 
+    // better-auth refuse role en input : le sélecteur du formulaire
+    // est la seule source, persistée ici après création du compte.
+    if (role === "recruteur") {
+      const roleResponse = await fetch("/api/user/role", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "recruiter" }),
+      });
+      if (!roleResponse.ok) {
+        setSubmitting(false);
+        showError(
+          "Le compte a été créé, mais le rôle recruteur n'a pas pu être enregistré.",
+          "Inscription incomplète",
+        );
+        return;
+      }
+    }
 
-    localStorage.setItem("role", role);
     window.location.assign(
       role === "candidat" ? "/inscription/video" : "/",
     );
@@ -163,6 +196,7 @@ export default function SignupForm() {
                 id="naissance"
                 type="date"
                 required
+                max={maxBirthDateInput()}
                 value={birthDate}
                 onChange={(event) => setBirthDate(event.target.value)}
                 autoComplete="bday"
@@ -191,24 +225,15 @@ export default function SignupForm() {
           </div>
 
           {role === "candidat" && (
-            <div className="flex flex-col gap-1">
-              <label htmlFor="adresse" className="font-sans text-sm font-medium text-texte-principal">
-                Adresse <span className="text-bleu-institutionnel">*</span>
-              </label>
-              <div className="flex items-center gap-2 rounded-lg border border-bordure-defaut bg-fond-page px-3 py-2.5 shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] focus-within:border-bleu-institutionnel focus-within:ring-2 focus-within:ring-fond-bleu-clair">
-                <MapPinIcon className="size-5 shrink-0 text-texte-tertiaire" />
-                <input
-                  id="adresse"
-                  type="text"
-                  required
-                  value={address}
-                  onChange={(event) => setAddress(event.target.value)}
-                  placeholder="Numéro, rue, code postal, ville"
-                  autoComplete="street-address"
-                  className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
-                />
-              </div>
-            </div>
+            <CommuneField
+              value={address}
+              picked={addressPicked}
+              required
+              onChange={(next, picked) => {
+                setAddress(next);
+                setAddressPicked(picked);
+              }}
+            />
           )}
 
           <div className="flex flex-col gap-1">
