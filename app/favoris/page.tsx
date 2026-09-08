@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 export default async function FavorisPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    redirect("/inscription");
+    redirect("/landing");
   }
 
   const role = session.user.role ?? null;
