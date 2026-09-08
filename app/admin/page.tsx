@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowUpRightIcon,
   CalendarIcon,
@@ -16,33 +16,147 @@ import {
 import RejectVideoModal from "@/components/reject-video-modal";
 import UserTable from "@/components/user-table";
 import BackButton from "@/components/back-button";
+import RequireRegistration from "@/components/require-registration";
+import { useToast } from "@/components/toast";
 
-// Fausses données de démonstration : la page n'est pour l'instant qu'une
-// maquette (aucun appel API). Les compteurs et vidéos seront branchés au
-// back-end une fois les endpoints de modération disponibles.
 type PendingVideo = {
   id: string;
   name: string;
   submittedAt: string;
+  url: string | null;
 };
 
-const initialPending: PendingVideo[] = [
-  { id: "1", name: "Amina Koné", submittedAt: "Il y a 10 min" },
-  { id: "2", name: "Lucas Martin", submittedAt: "Il y a 1 h" },
-  { id: "3", name: "Sophia Nguyen", submittedAt: "Il y a 3 h" },
-  { id: "4", name: "Youssef Benali", submittedAt: "Il y a 5 h" },
-  { id: "5", name: "Emma Dubois", submittedAt: "Hier" },
-];
+type VideoItem = {
+  id: string;
+  url?: string | null;
+  createdAt?: string;
+  user?: { name?: string | null } | null;
+};
+
+function formatSubmittedAt(iso?: string): string {
+  if (!iso) {
+    return "En attente";
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return "En attente";
+  }
+  const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) {
+    return "À l'instant";
+  }
+  if (minutes < 60) {
+    return `Il y a ${minutes} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `Il y a ${hours} h`;
+  }
+  const days = Math.floor(hours / 24);
+  if (days === 1) {
+    return "Hier";
+  }
+  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
 
 export default function AdminPage() {
-  const [pending, setPending] = useState<PendingVideo[]>(initialPending);
-  // Vidéo dont on est en train de saisir le motif de refus (null = modal fermé).
+  return (
+    <RequireRegistration>
+      <AdminModeration />
+    </RequireRegistration>
+  );
+}
+
+function AdminModeration() {
+  const { showError } = useToast();
+  const [pending, setPending] = useState<PendingVideo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actingId, setActingId] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<PendingVideo | null>(null);
-  // Vue active : modération (stats + vidéos à valider) ou tableau des utilisateurs.
+  const [watching, setWatching] = useState<PendingVideo | null>(null);
   const [view, setView] = useState<"moderation" | "users">("moderation");
 
-  const resolve = (id: string) =>
+  useEffect(() => {
+    let alive = true;
+    async function load() {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/videos?validated=false&limit=50");
+        if (!response.ok) {
+          throw new Error("videos unavailable");
+        }
+        const data = await response.json();
+        const list: PendingVideo[] = (
+          Array.isArray(data.items) ? (data.items as VideoItem[]) : []
+        ).map((item) => ({
+          id: item.id,
+          name: item.user?.name || "Profil",
+          submittedAt: formatSubmittedAt(item.createdAt),
+          url: item.url ?? null,
+        }));
+        if (alive) {
+          setPending(list);
+        }
+      } catch {
+        if (alive) {
+          showError("Impossible de charger les vidéos à valider.", "Modération");
+        }
+      } finally {
+        if (alive) {
+          setLoading(false);
+        }
+      }
+    }
+    load();
+    return () => {
+      alive = false;
+    };
+  }, [showError]);
+
+  function removePending(id: string) {
     setPending((current) => current.filter((video) => video.id !== id));
+  }
+
+  async function approve(id: string) {
+    if (actingId) {
+      return;
+    }
+    setActingId(id);
+    try {
+      const response = await fetch(`/api/videos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ validated: true }),
+      });
+      if (!response.ok) {
+        throw new Error("approve failed");
+      }
+      removePending(id);
+    } catch {
+      showError("Impossible d'approuver cette vidéo.", "Validation échouée");
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  async function reject(id: string) {
+    if (actingId) {
+      return;
+    }
+    setActingId(id);
+    try {
+      const response = await fetch(`/api/videos/${id}`, { method: "DELETE" });
+      if (!response.ok && response.status !== 204) {
+        throw new Error("reject failed");
+      }
+      removePending(id);
+      setRejecting(null);
+    } catch {
+      showError("Impossible de refuser cette vidéo.", "Refus échoué");
+    } finally {
+      setActingId(null);
+    }
+  }
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col border-x border-bordure-defaut bg-fond-page">
@@ -158,7 +272,16 @@ export default function AdminPage() {
                 </span>
               </div>
 
-              {pending.length === 0 ? (
+              {loading ? (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[3/4] animate-pulse rounded-xl bg-fond-page"
+                    />
+                  ))}
+                </div>
+              ) : pending.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-bordure-forte bg-fond-page p-12 text-center">
                   <span className="mb-4 flex size-16 items-center justify-center rounded-full bg-fond-neutre text-texte-tertiaire">
                     <CheckIcon className="size-7" />
@@ -176,7 +299,9 @@ export default function AdminPage() {
                     <PendingCard
                       key={video.id}
                       video={video}
-                      onApprove={() => resolve(video.id)}
+                      busy={actingId === video.id}
+                      onWatch={() => setWatching(video)}
+                      onApprove={() => approve(video.id)}
                       onReject={() => setRejecting(video)}
                     />
                   ))}
@@ -187,13 +312,15 @@ export default function AdminPage() {
         )}
       </main>
 
+      {watching && (
+        <WatchVideoModal video={watching} onClose={() => setWatching(null)} />
+      )}
       {rejecting && (
         <RejectVideoModal
           videoName={rejecting.name}
           onClose={() => setRejecting(null)}
           onConfirm={() => {
-            resolve(rejecting.id);
-            setRejecting(null);
+            reject(rejecting.id);
           }}
         />
       )}
@@ -254,17 +381,40 @@ function StatCell({
 
 function PendingCard({
   video,
+  busy,
+  onWatch,
   onApprove,
   onReject,
 }: {
   video: PendingVideo;
+  busy: boolean;
+  onWatch: () => void;
   onApprove: () => void;
   onReject: () => void;
 }) {
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl border border-bordure-defaut bg-fond-page shadow-sm transition-shadow hover:shadow-md">
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-texte-principal">
-        <div className="absolute inset-0 bg-gradient-to-tr from-bleu-institutionnel/25 to-texte-principal" />
+      <button
+        type="button"
+        onClick={onWatch}
+        disabled={!video.url}
+        aria-label={`Lire la vidéo de ${video.name}`}
+        className="relative aspect-[3/4] w-full overflow-hidden bg-texte-principal disabled:cursor-not-allowed"
+      >
+        {video.url ? (
+          <video
+            src={video.url}
+            muted
+            playsInline
+            preload="metadata"
+            onLoadedMetadata={(event) => {
+              event.currentTarget.currentTime = 0.1;
+            }}
+            className="pointer-events-none absolute inset-0 size-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-tr from-bleu-institutionnel/25 to-texte-principal" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="flex size-12 items-center justify-center rounded-full border border-white/30 bg-white/20 text-texte-inverse shadow-lg backdrop-blur-md transition-colors group-hover:border-bleu-institutionnel group-hover:bg-bleu-institutionnel">
@@ -275,7 +425,7 @@ function PendingCard({
           <ClockIcon className="size-3.5" />
           {video.submittedAt}
         </div>
-      </div>
+      </button>
 
       <div className="flex flex-1 flex-col p-4">
         <h4
@@ -289,7 +439,8 @@ function PendingCard({
           <button
             type="button"
             onClick={onApprove}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-bleu-institutionnel py-2.5 font-sans text-sm font-medium text-texte-inverse shadow-sm transition-colors hover:brightness-110"
+            disabled={busy}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-bleu-institutionnel py-2.5 font-sans text-sm font-medium text-texte-inverse shadow-sm transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <CheckIcon className="size-4" />
             Approuver
@@ -297,12 +448,74 @@ function PendingCard({
           <button
             type="button"
             onClick={onReject}
+            disabled={busy}
             aria-label="Rejeter"
             title="Rejeter"
-            className="flex size-[42px] shrink-0 items-center justify-center rounded-lg border border-bordure-defaut bg-fond-page text-texte-secondaire transition-colors hover:border-erreur/30 hover:bg-erreur/10 hover:text-erreur"
+            className="flex size-[42px] shrink-0 items-center justify-center rounded-lg border border-bordure-defaut bg-fond-page text-texte-secondaire transition-colors hover:border-erreur/30 hover:bg-erreur/10 hover:text-erreur disabled:cursor-not-allowed disabled:opacity-60"
           >
             <CloseIcon className="size-5" />
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WatchVideoModal({
+  video,
+  onClose,
+}: {
+  video: PendingVideo;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Fermer"
+        onClick={onClose}
+        className="absolute inset-0 cursor-default bg-texte-principal/80 backdrop-blur-sm"
+      />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Vidéo de ${video.name}`}
+        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl bg-black shadow-2xl"
+      >
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent p-4">
+          <div className="text-texte-inverse">
+            <h3 className="font-sans text-sm font-medium">{video.name}</h3>
+            <p className="font-sans text-xs text-texte-inverse/70">
+              Vidéo de présentation
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            className="rounded-full bg-black/20 p-2 text-texte-inverse/80 backdrop-blur-md transition-all hover:bg-black/40 hover:text-texte-inverse"
+          >
+            <CloseIcon className="size-5" />
+          </button>
+        </div>
+
+        <div className="relative aspect-[3/4] w-full bg-texte-principal">
+          {video.url ? (
+            <video
+              src={video.url}
+              controls
+              autoPlay
+              playsInline
+              className="absolute inset-0 size-full object-contain"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-bleu-institutionnel/30 to-texte-principal px-6 text-center">
+              <span className="font-sans text-sm font-medium text-texte-inverse/70">
+                Aucune vidéo disponible.
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
