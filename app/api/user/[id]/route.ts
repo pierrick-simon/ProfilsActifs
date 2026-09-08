@@ -85,13 +85,14 @@ export async function GET(
   const startOfToday = new Date();
   startOfToday.setUTCHours(0, 0, 0, 0);
 
-  const [favoryCount, favoryCountToday] =
-    await Promise.all([
-      prisma.favory.count({ where: { favoredUserId: userId } }),
-      prisma.favory.count({
-        where: { favoredUserId: userId, timestamp: { gte: startOfToday } },
-      }),
-    ]);
+  const [favoryCount, favoryCountToday] = isOwnProfile
+    ? await Promise.all([
+        prisma.favory.count({ where: { favoredUserId: userId } }),
+        prisma.favory.count({
+          where: { favoredUserId: userId, timestamp: { gte: startOfToday } },
+        }),
+      ])
+    : [null, null];
 
   const latestVideo = user.video[0] ?? null;
 
@@ -109,8 +110,9 @@ export async function GET(
       certification_date: user.certification
         ? user.certification.toISOString()
         : null,
-      favory: favoryCount,
-      favory_today: favoryCountToday,
+      ...(isOwnProfile
+        ? { favory: favoryCount, favory_today: favoryCountToday }
+        : {}),
       video_url: playback?.url ?? null,
       video_status: playback?.status ?? null,
       video_views: latestVideo?.views ?? null,

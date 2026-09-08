@@ -41,8 +41,8 @@ type UserProfile = {
   city: string;
   activity: string | null;
   certification_date: string | null;
-  favory: number;
-  favory_today: number;
+  favory?: number;
+  favory_today?: number;
   video_url: string | null;
   video_status: string | null;
   video_views: number | null;
@@ -246,13 +246,15 @@ export default function ProfileDetail({ userId }: { userId: string }) {
                   )}
                 </div>
 
-                <div className="mb-6 grid grid-cols-2 gap-3">
-                  <StatChip label="Favoris" value={String(profile.favory)} />
-                  <StatChip
-                    label="Aujourd'hui"
-                    value={String(profile.favory_today)}
-                  />
-                </div>
+                {isOwnProfile && (
+                  <div className="mb-6 grid grid-cols-2 gap-3">
+                    <StatChip label="Favoris" value={String(profile.favory ?? 0)} />
+                    <StatChip
+                      label="Aujourd'hui"
+                      value={String(profile.favory_today ?? 0)}
+                    />
+                  </div>
+                )}
 
                 {isOwnProfile && (
                   <div className="mb-6 flex flex-col gap-1 rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-2.5">
