@@ -2,7 +2,13 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { fileTypeFromBuffer } from "file-type";
 import { auth } from "@/lib/auth";
-import { CATALOG_ORDER_BY, catalogCursorWhere, decodeCatalogCursor, nextCatalogCursor } from "@/lib/catalog";
+import {
+  CATALOG_ORDER_BY,
+  catalogCursorWhere,
+  decodeCatalogCursor,
+  nextCatalogCursor,
+  parseCatalogFilters,
+} from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { ALLOWED_VIDEO_MIME_TYPES, extensionForMimeType, MAX_VIDEO_SIZE_BYTES } from "@/lib/storage";
 import { getActiveVideoProvider } from "@/lib/video-provider";
@@ -34,6 +40,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Curseur de pagination invalide" }, { status: 400 });
   }
 
+  const filters = parseCatalogFilters(searchParams);
+  if (!filters.ok) {
+    return NextResponse.json({ error: filters.error }, { status: 400 });
+  }
+
   const videos = await prisma.video.findMany({
     where: {
       ...(requestedUserId ? { userId: requestedUserId } : {}),
@@ -42,6 +53,7 @@ export async function GET(request: NextRequest) {
           ? { validated: validatedParam === "true" }
           : {}
         : { validated: true }),
+      ...filters.where,
       ...catalogCursorWhere(cursor),
     },
     orderBy: CATALOG_ORDER_BY,

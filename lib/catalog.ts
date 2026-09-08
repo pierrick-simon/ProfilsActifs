@@ -1,3 +1,7 @@
+import { ActivitySector } from "@/prisma/prisma/enums";
+
+const VALID_SECTORS = Object.values(ActivitySector);
+
 /**
  * Ordre et pagination du catalogue de profils (GET /api/videos).
  *
@@ -54,4 +58,43 @@ export function catalogCursorWhere(cursor: CatalogCursor | null) {
 
 export function nextCatalogCursor(lastItem: { id: string; user: { updatedAt: Date } }): string {
   return encodeCatalogCursor({ u: lastItem.user.updatedAt.toISOString(), id: lastItem.id });
+}
+
+export type CatalogFilterResult =
+  | { ok: true; where: Record<string, unknown> }
+  | { ok: false; error: string };
+
+// Filtres professionnels du catalogue : secteur, localisation, certification.
+// Aucun critère de popularité n'est lu ici, par construction — cette fonction
+// n'accepte que ces trois paramètres de query string, rien d'autre.
+export function parseCatalogFilters(searchParams: URLSearchParams): CatalogFilterResult {
+  const sectorParam = searchParams.get("sector");
+  if (sectorParam !== null && !VALID_SECTORS.includes(sectorParam as ActivitySector)) {
+    return {
+      ok: false,
+      error: `sector doit être l'une des valeurs suivantes : ${VALID_SECTORS.join(", ")}`,
+    };
+  }
+
+  const certifiedParam = searchParams.get("certified");
+  if (certifiedParam !== null && certifiedParam !== "true" && certifiedParam !== "false") {
+    return { ok: false, error: "certified doit valoir 'true' ou 'false'" };
+  }
+
+  const locationParam = searchParams.get("location");
+
+  const userWhere: Record<string, unknown> = {};
+  if (sectorParam) {
+    userWhere.activitySector = sectorParam;
+  }
+  if (locationParam) {
+    userWhere.localisation = { contains: locationParam, mode: "insensitive" };
+  }
+  if (certifiedParam === "true") {
+    userWhere.certification = { not: null };
+  } else if (certifiedParam === "false") {
+    userWhere.certification = null;
+  }
+
+  return { ok: true, where: Object.keys(userWhere).length > 0 ? { user: userWhere } : {} };
 }
