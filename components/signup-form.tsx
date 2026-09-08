@@ -17,6 +17,7 @@ import {
 import AuthUserBadge from "@/components/auth-user-badge";
 import CommuneField from "@/components/commune-field";
 import { authClient } from "@/lib/auth_client";
+import { isAtLeast16, maxBirthDateInput } from "@/lib/age-gate";
 import { useToast } from "@/components/toast";
 
 
@@ -46,13 +47,23 @@ export default function SignupForm() {
       return;
     }
 
+    const parts = birthDate.split("-").map(Number);
+    const dateOfBirth =
+      parts.length === 3
+        ? new Date(parts[0], parts[1] - 1, parts[2])
+        : new Date(birthDate);
+    if (!isAtLeast16(dateOfBirth)) {
+      showError("Vous devez avoir au moins 16 ans pour vous inscrire.");
+      return;
+    }
+
     setSubmitting(true);
 
     const { error: authError } = await authClient.signUp.email({
       name,
       email,
       password,
-      dateOfBirth: new Date(birthDate),
+      dateOfBirth,
       localisation: role === "candidat" ? address : "",
       acceptedTerms: acceptTerms,
     });
@@ -185,6 +196,7 @@ export default function SignupForm() {
                 id="naissance"
                 type="date"
                 required
+                max={maxBirthDateInput()}
                 value={birthDate}
                 onChange={(event) => setBirthDate(event.target.value)}
                 autoComplete="bday"
