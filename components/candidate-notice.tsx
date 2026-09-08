@@ -1,11 +1,15 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useViewerRole } from "@/hooks/use-role";
 
 export default function CandidateNotice() {
+  const pathname = usePathname();
   const { isCandidate, isPending } = useViewerRole();
+  const onAuthPage =
+    pathname.startsWith("/inscription") || pathname.startsWith("/connexion");
 
-  if (isPending || !isCandidate) {
+  if (!onAuthPage && (isPending || !isCandidate)) {
     return null;
   }
 
