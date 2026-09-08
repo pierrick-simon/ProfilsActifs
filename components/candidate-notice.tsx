@@ -1,11 +1,11 @@
 "use client";
 
-import { useRole } from "@/hooks/use-role";
+import { useViewerRole } from "@/hooks/use-role";
 
 export default function CandidateNotice() {
-  const isCandidat = useRole() === "candidat";
+  const { isCandidate, isPending } = useViewerRole();
 
-  if (!isCandidat) {
+  if (isPending || !isCandidate) {
     return null;
   }
 
