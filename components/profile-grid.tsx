@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ChevronLeftIcon,
@@ -35,7 +35,7 @@ type SortKey = "recent" | "relevance" | "views";
 
 type ProfileVideo = {
   id: string;
-  url: string;
+  url: string | null;
   name: string;
   views: number;
   role: string | null;
@@ -45,7 +45,7 @@ type ProfileVideo = {
 
 type VideoItem = {
   id: string;
-  url: string;
+  url: string | null;
   views?: number;
   userId?: string;
   user?: {
@@ -111,7 +111,7 @@ export default function ProfileGrid() {
           Array.isArray(data.items) ? (data.items as VideoItem[]) : []
         ).map((v) => ({
           id: v.id,
-          url: v.url,
+          url: v.url ?? null,
           name: v.user?.name ?? "",
           views: typeof v.views === "number" ? v.views : 0,
           role: v.user?.activitySector
@@ -259,15 +259,65 @@ export default function ProfileGrid() {
 }
 
 function ProfileCard({ video }: { video: ProfileVideo }) {
+  const previewRef = useRef<HTMLVideoElement>(null);
+  const [previewing, setPreviewing] = useState(false);
+
+  function startPreview() {
+    const element = previewRef.current;
+    if (!element) {
+      return;
+    }
+    setPreviewing(true);
+    // Le navigateur peut refuser la lecture (économie de données, onglet inactif) :
+    // on retombe alors sur la vignette au lieu de laisser la carte en lecture fantôme.
+    element.play().catch(() => setPreviewing(false));
+  }
+
+  function stopPreview() {
+    setPreviewing(false);
+    const element = previewRef.current;
+    if (element) {
+      element.pause();
+      element.currentTime = 0;
+    }
+  }
+
   return (
     <Link
       href={`/profil/${video.userId}`}
       aria-label={`Voir le profil de ${video.name || "ce candidat"}`}
+      onMouseEnter={startPreview}
+      onMouseLeave={stopPreview}
+      onFocus={startPreview}
+      onBlur={stopPreview}
       className="group relative block aspect-[9/16] overflow-hidden rounded-2xl bg-texte-principal text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-bleu-institutionnel"
     >
-      <div className="absolute inset-0 bg-gradient-to-tr from-bleu-institutionnel/25 to-texte-principal transition-transform duration-700 group-hover:scale-105" />
+      {video.url ? (
+        <video
+          ref={previewRef}
+          src={video.url}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          tabIndex={-1}
+          // Sans ce léger décalage, plusieurs navigateurs n'affichent aucune image
+          // tant que la vidéo n'a pas démarré et la carte reste noire.
+          onLoadedMetadata={(event) => {
+            event.currentTarget.currentTime = 0.1;
+          }}
+          className="pointer-events-none absolute inset-0 size-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-tr from-bleu-institutionnel/25 to-texte-principal transition-transform duration-700 group-hover:scale-105" />
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-90 transition-opacity group-hover:opacity-100" />
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div
+        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+          previewing ? "opacity-0" : "opacity-100"
+        }`}
+      >
         <div className="flex size-16 items-center justify-center rounded-full border border-white/30 bg-white/20 text-texte-inverse shadow-xl backdrop-blur-md transition-all duration-300 group-hover:scale-110 group-hover:border-bleu-institutionnel group-hover:bg-bleu-institutionnel">
           <PlayIcon className="ml-0.5 size-6" />
         </div>
