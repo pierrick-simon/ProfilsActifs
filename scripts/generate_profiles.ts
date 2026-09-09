@@ -3,15 +3,14 @@ import {promisify} from "util";
 import {auth} from "@/lib/auth";
 import {prisma} from "@/lib/db";
 import prompts from "prompts";
-import {faker} from "@faker-js/faker";
+import {fakerFR as faker} from "@faker-js/faker";
 import {randomUUID} from "crypto";
 import {getActiveVideoProvider} from "@/lib/video-provider";
 import {
     readFile,
     rm,
     writeFile,
-    mkdir,
-    rmdir
+    mkdir
 } from "fs/promises";
 
 const CandidateCount = 300;
@@ -340,7 +339,7 @@ async function generateRandomUser(
         completedUsers++;
 
         console.log(
-            `Finished new ${role} | active=${activeUsers} | remaining=${totalUsers - completedUsers} | duration=${Date.now() - start}ms`
+            `Finished new ${role} | remaining=${totalUsers - completedUsers} | duration=${Date.now() - start}ms`
         );
     }
 }
@@ -569,7 +568,7 @@ async function generateUsers(
                 )
         );
 
-    await rmdir("./tmp", {
+    await rm("./tmp", {
         recursive: true,
     });
     await writeUsersToFile(users);
