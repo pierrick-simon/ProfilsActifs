@@ -64,9 +64,9 @@ export type CatalogFilterResult =
   | { ok: true; where: Record<string, unknown> }
   | { ok: false; error: string };
 
-// Filtres professionnels du catalogue : secteur, localisation, certification.
-// Aucun critère de popularité n'est lu ici, par construction — cette fonction
-// n'accepte que ces trois paramètres de query string, rien d'autre.
+// Filtres professionnels du catalogue : secteur, localisation, certification,
+// compétence. Aucun critère de popularité n'est lu ici, par construction —
+// cette fonction n'accepte que ces paramètres de query string, rien d'autre.
 export function parseCatalogFilters(searchParams: URLSearchParams): CatalogFilterResult {
   const sectorParam = searchParams.get("sector");
   if (sectorParam !== null && !VALID_SECTORS.includes(sectorParam as ActivitySector)) {
@@ -82,6 +82,7 @@ export function parseCatalogFilters(searchParams: URLSearchParams): CatalogFilte
   }
 
   const locationParam = searchParams.get("location");
+  const skillParam = searchParams.get("skill");
 
   const userWhere: Record<string, unknown> = {};
   if (sectorParam) {
@@ -94,6 +95,12 @@ export function parseCatalogFilters(searchParams: URLSearchParams): CatalogFilte
     userWhere.certification = { not: null };
   } else if (certifiedParam === "false") {
     userWhere.certification = null;
+  }
+  if (skillParam) {
+    // skillParam est l'id d'une compétence (cf. GET /api/skill) : "some" car un
+    // profil peut avoir plusieurs compétences, on veut celles qui ont au moins
+    // celle-ci. Un id inexistant ne donne aucune erreur, juste zéro résultat.
+    userWhere.userSkill = { some: { skillId: skillParam } };
   }
 
   return { ok: true, where: Object.keys(userWhere).length > 0 ? { user: userWhere } : {} };
