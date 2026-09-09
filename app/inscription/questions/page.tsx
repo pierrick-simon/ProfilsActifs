@@ -216,7 +216,7 @@ export default function QuestionsPage() {
 
   function goBack() {
     if (step === 0) {
-      router.push("/inscription/video");
+      router.push("/");
       return;
     }
     setStep((current) => current - 1);
@@ -310,10 +310,6 @@ export default function QuestionsPage() {
           )}
         </div>
       </div>
-
-      <footer className="flex items-center px-11 py-6">
-        <span className="font-sans text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
-      </footer>
     </main>
   );
 }

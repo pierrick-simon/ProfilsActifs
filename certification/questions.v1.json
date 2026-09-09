@@ -4,6 +4,7 @@
       "id": 1,
       "question": "Un recruteur vous contacte pour un poste qui ne correspond pas du tout à vos attentes. Quelle est la meilleure attitude à adopter ?",
       "type": "single-choice",
+      "weight": 1,
       "options": {
         "choices": [
           "Ne pas répondre",
@@ -12,97 +13,118 @@
           "Accepter quand même l'entretien sans le dire"
         ],
         "answer": "Répondre poliment en expliquant que le poste ne correspond pas à votre recherche"
-      },
-      "weight": 1
+      }
     },
     {
       "id": 2,
       "question": "La communication professionnelle repose uniquement sur les compétences techniques.",
       "type": "true-false",
+      "weight": 1,
       "options": {
         "answer": false
-      },
-      "weight": 1
+      }
     },
     {
       "id": 3,
       "question": "Décrivez une situation où vous avez dû vous adapter rapidement à un changement imprévu dans votre travail.",
       "type": "free-answer",
+      "weight": 2,
       "options": {
         "answer": null
-      },
-      "weight": 2
+      }
     },
     {
       "id": 4,
       "question": "Vous devez présenter votre profil en vidéo en moins de 2 minutes. Combien de temps consacrez-vous idéalement à parler de vos compétences clés ?",
       "type": "numeric",
+      "weight": 1,
       "options": {
         "answer": 60
-      },
-      "weight": 1
+      }
     },
     {
       "id": 5,
       "question": "Parmi ces éléments, lesquels favorisent une bonne organisation du travail ?",
       "type": "multiple-choice",
+      "weight": 2,
       "options": {
-        "choices": ["Planifier ses tâches", "Improviser en permanence", "Prioriser les urgences", "Ignorer les délais"],
-        "answer": ["Planifier ses tâches", "Prioriser les urgences"]
-      },
-      "weight": 2
+        "choices": [
+          "Planifier ses tâches",
+          "Improviser en permanence",
+          "Prioriser les urgences",
+          "Ignorer les délais"
+        ],
+        "answer": [
+          "Planifier ses tâches",
+          "Prioriser les urgences"
+        ]
+      }
     },
     {
       "id": 6,
       "question": "Quelle qualité est essentielle pour bien gérer plusieurs missions en parallèle ?",
       "type": "single-choice",
+      "weight": 1,
       "options": {
-        "choices": ["La procrastination", "L'organisation", "L'improvisation totale", "L'isolement"],
+        "choices": [
+          "La procrastination",
+          "L'organisation",
+          "L'improvisation totale",
+          "L'isolement"
+        ],
         "answer": "L'organisation"
-      },
-      "weight": 1
+      }
     },
     {
       "id": 7,
       "question": "Il est recommandé de préparer les questions les plus fréquentes avant un entretien d'embauche.",
       "type": "true-false",
+      "weight": 1,
       "options": {
         "answer": true
-      },
-      "weight": 1
+      }
     },
     {
       "id": 8,
       "question": "Racontez une expérience où votre sens de l'organisation vous a permis d'atteindre un objectif.",
       "type": "free-answer",
+      "weight": 2,
       "options": {
         "answer": null
-      },
-      "weight": 2
+      }
     },
     {
       "id": 9,
       "question": "Selon les bonnes pratiques, quelle est la durée maximale recommandée pour une vidéo de présentation professionnelle courte ?",
       "type": "numeric",
+      "weight": 1,
       "options": {
         "answer": 3
-      },
-      "weight": 1
+      }
     },
     {
       "id": 10,
       "question": "Quels sont des exemples de compétences transversales (soft skills) ?",
       "type": "multiple-choice",
+      "weight": 1,
       "options": {
-        "choices": ["Communication", "Maîtrise d'Excel", "Adaptabilité", "Certification comptable"],
-        "answer": ["Communication", "Adaptabilité"]
-      },
-      "weight": 1
+        "choices": [
+          "Communication",
+          "Maîtrise d'Excel",
+          "Adaptabilité",
+          "Certification comptable"
+        ],
+        "answer": [
+          "Communication",
+          "Adaptabilité"
+        ]
+      }
     },
     {
       "id": 11,
       "question": "Face à un désaccord avec un collègue, quelle est l'attitude la plus professionnelle ?",
       "type": "single-choice",
+      "weight": 1,
       "options": {
         "choices": [
           "Éviter tout échange",
@@ -111,50 +133,58 @@
           "En parler à tout le monde sauf à la personne concernée"
         ],
         "answer": "Écouter son point de vue et chercher un compromis"
-      },
-      "weight": 1
+      }
     },
     {
       "id": 12,
       "question": "L'adaptabilité professionnelle signifie uniquement accepter tous les changements sans jamais les questionner.",
       "type": "true-false",
+      "weight": 1,
       "options": {
         "answer": false
-      },
-      "weight": 1
+      }
     },
     {
       "id": 13,
       "question": "Expliquez comment vous organisez votre semaine de travail pour respecter vos échéances.",
       "type": "free-answer",
+      "weight": 1,
       "options": {
         "answer": null
-      },
-      "weight": 1
+      }
     },
     {
       "id": 14,
       "question": "Dans une équipe de 5 personnes, combien de collègues devez-vous informer au minimum lors d'un changement de planning affectant tout le groupe ?",
       "type": "numeric",
+      "weight": 1,
       "options": {
         "answer": 4
-      },
-      "weight": 1
+      }
     },
     {
       "id": 15,
       "question": "Quels comportements traduisent une bonne capacité de communication en entreprise ?",
       "type": "multiple-choice",
+      "weight": 2,
       "options": {
-        "choices": ["Écoute active", "Interrompre systématiquement", "Reformuler pour vérifier sa compréhension", "Ignorer les retours"],
-        "answer": ["Écoute active", "Reformuler pour vérifier sa compréhension"]
-      },
-      "weight": 2
+        "choices": [
+          "Écoute active",
+          "Interrompre systématiquement",
+          "Reformuler pour vérifier sa compréhension",
+          "Ignorer les retours"
+        ],
+        "answer": [
+          "Écoute active",
+          "Reformuler pour vérifier sa compréhension"
+        ]
+      }
     },
     {
       "id": 16,
       "question": "Quel est le principal objectif d'un badge de certification sur un profil ProfilsActifs ?",
       "type": "single-choice",
+      "weight": 1,
       "options": {
         "choices": [
           "Remplacer entièrement le CV",
@@ -163,45 +193,52 @@
           "Remplacer l'entretien d'embauche"
         ],
         "answer": "Valoriser et distinguer les compétences transversales du candidat"
-      },
-      "weight": 1
+      }
     },
     {
       "id": 17,
       "question": "Une bonne organisation personnelle élimine complètement le besoin de s'adapter aux imprévus.",
       "type": "true-false",
+      "weight": 1,
       "options": {
         "answer": false
-      },
-      "weight": 1
+      }
     },
     {
       "id": 18,
       "question": "Quelles compétences aimeriez-vous mettre en avant dans votre prochaine vidéo de présentation professionnelle ?",
       "type": "free-answer",
+      "weight": 1,
       "options": {
         "answer": null
-      },
-      "weight": 1
+      }
     },
     {
       "id": 19,
       "question": "Sur combien de critères principaux un recruteur peut-il filtrer les profils sur ProfilsActifs (compétences, secteur, localisation, statut de certification) ?",
       "type": "numeric",
+      "weight": 1,
       "options": {
         "answer": 4
-      },
-      "weight": 1
+      }
     },
     {
       "id": 20,
       "question": "Quelles sont des façons appropriées de réagir à un retour critique constructif d'un recruteur ?",
       "type": "multiple-choice",
+      "weight": 2,
       "options": {
-        "choices": ["Remercier et prendre en compte le retour", "Se braquer et argumenter systématiquement", "Demander des précisions pour progresser", "Ignorer complètement le message"],
-        "answer": ["Remercier et prendre en compte le retour", "Demander des précisions pour progresser"]
-      },
-      "weight": 2
+        "choices": [
+          "Remercier et prendre en compte le retour",
+          "Se braquer et argumenter systématiquement",
+          "Demander des précisions pour progresser",
+          "Ignorer complètement le message"
+        ],
+        "answer": [
+          "Remercier et prendre en compte le retour",
+          "Demander des précisions pour progresser"
+        ]
+      }
     }
   ]
 }
