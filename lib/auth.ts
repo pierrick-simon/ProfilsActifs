@@ -47,6 +47,12 @@ export const auth = betterAuth({
         required: false,
         input: true,
       },
+      showProfile: {
+        type: "boolean",
+        required: false,
+        defaultValue: true,
+        input: false,
+      },
     },
   },
   databaseHooks: {
