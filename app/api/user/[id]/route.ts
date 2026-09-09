@@ -35,6 +35,12 @@ export async function GET(
           validated: true,
         },
       },
+      userSkill: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          skill: { select: { id: true, name: true } },
+        },
+      },
     },
   });
 
@@ -100,6 +106,11 @@ export async function GET(
     ? await resolveVideoPlayback(latestVideo)
     : null;
 
+  const skills = user.userSkill.map((us) => ({
+    id: us.skill.id,
+    name: us.skill.name,
+  }));
+
   return NextResponse.json(
     {
       id: user.id,
@@ -110,6 +121,7 @@ export async function GET(
       certification_date: user.certification
         ? user.certification.toISOString()
         : null,
+      skills,
       ...(isOwnProfile
         ? { favory: favoryCount, favory_today: favoryCountToday }
         : {}),
