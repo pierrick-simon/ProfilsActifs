@@ -11,6 +11,7 @@ import {
 } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { ALLOWED_VIDEO_MIME_TYPES, extensionForMimeType, MAX_VIDEO_SIZE_BYTES } from "@/lib/storage";
+import { hasVideoConsent } from "@/lib/video-consent";
 import { getActiveVideoProvider } from "@/lib/video-provider";
 import { resolveVideoPlayback } from "@/lib/videos";
 
@@ -166,7 +167,8 @@ export async function GET(request: NextRequest) {
  *       Uploads a new profile video (multipart/form-data, "file" field). The type
  *       is checked both by declared extension and by actual binary signature. The
  *       created video is not validated by default (validated=false): it only
- *       appears in the recruiter catalog after moderation.
+ *       appears in the recruiter catalog after moderation. Requires the caller to
+ *       have granted RGPD consent beforehand (see POST /api/videos/consent).
  *     requestBody:
  *       required: true
  *       content:
@@ -182,6 +184,8 @@ export async function GET(request: NextRequest) {
  *         description: Missing file.
  *       401:
  *         description: No session.
+ *       403:
+ *         description: RGPD consent not granted (see POST /api/videos/consent).
  *       413:
  *         description: Video exceeds the 100MB size limit.
  *       415:
@@ -191,6 +195,13 @@ export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  if (!(await hasVideoConsent(session.user.id))) {
+    return NextResponse.json(
+      { error: "Consentement RGPD requis avant l'envoi d'une vidéo" },
+      { status: 403 },
+    );
   }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);

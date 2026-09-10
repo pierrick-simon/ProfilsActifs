@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeftIcon, CloseIcon, LinkIcon, PlusIcon } from "@/components/icons";
+import { ChevronLeftIcon, CloseIcon, InfoIcon, LinkIcon, PlusIcon } from "@/components/icons";
 import { useToast } from "@/components/toast";
 
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100 Mo, aligné sur l'API.
@@ -16,6 +16,8 @@ export default function VideoUploadPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [link, setLink] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [consentModalOpen, setConsentModalOpen] = useState(false);
+  const [grantingConsent, setGrantingConsent] = useState(false);
 
   const previewUrl = videoUrl ?? (link.trim() || null);
 
@@ -36,11 +38,7 @@ export default function VideoUploadPage() {
     setVideoUrl(URL.createObjectURL(file));
   }
 
-  async function handleContinue() {
-    if (submitting) {
-      return;
-    }
-
+  async function uploadVideo() {
     const trimmedLink = link.trim();
     let response: Response | null = null;
 
@@ -71,6 +69,47 @@ export default function VideoUploadPage() {
     }
 
     router.push("/");
+  }
+
+  async function handleContinue() {
+    if (submitting) {
+      return;
+    }
+
+    if (!videoFile && !link.trim()) {
+      router.push("/");
+      return;
+    }
+
+    setSubmitting(true);
+    const consentRes = await fetch("/api/videos/consent").catch(() => null);
+    const consent = consentRes?.ok ? await consentRes.json().catch(() => null) : null;
+    setSubmitting(false);
+
+    if (consent?.granted) {
+      await uploadVideo();
+      return;
+    }
+
+    setConsentModalOpen(true);
+  }
+
+  async function handleAcceptConsent() {
+    if (grantingConsent) {
+      return;
+    }
+
+    setGrantingConsent(true);
+    const res = await fetch("/api/videos/consent", { method: "POST" }).catch(() => null);
+    setGrantingConsent(false);
+
+    if (!res?.ok) {
+      showError("Impossible d'enregistrer votre consentement.", "Consentement RGPD");
+      return;
+    }
+
+    setConsentModalOpen(false);
+    await uploadVideo();
   }
 
   return (
@@ -180,6 +219,71 @@ export default function VideoUploadPage() {
           />
         </div>
       </div>
+
+      {consentModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Fermer"
+            onClick={() => setConsentModalOpen(false)}
+            className="absolute inset-0 cursor-default bg-texte-principal/40 backdrop-blur-sm"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="video-consent-title"
+            className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl bg-fond-page shadow-[0px_16px_32px_-12px_rgba(14,18,27,0.25)]"
+          >
+            <div className="flex items-start justify-between border-b border-bordure-defaut px-6 py-5">
+              <div className="flex items-start gap-4">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-fond-bleu-clair text-bleu-institutionnel">
+                  <InfoIcon className="size-5" />
+                </span>
+                <div className="flex flex-col">
+                  <h2
+                    id="video-consent-title"
+                    className="font-sans text-lg font-semibold text-texte-principal"
+                  >
+                    Consentement RGPD
+                  </h2>
+                  <p className="mt-1 font-sans text-sm text-texte-tertiaire">
+                    Avant d&apos;envoyer votre vidéo, nous avons besoin de votre accord
+                    explicite pour la stocker, l&apos;encoder et la diffuser aux
+                    recruteurs. Vous pourrez retirer ce consentement à tout moment
+                    depuis votre profil ; votre vidéo sera alors définitivement
+                    supprimée.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConsentModalOpen(false)}
+                aria-label="Fermer"
+                className="rounded-lg p-1 text-texte-tertiaire transition-colors hover:bg-fond-neutre hover:text-texte-secondaire"
+              >
+                <CloseIcon className="size-5" />
+              </button>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-bordure-defaut bg-fond-neutre px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setConsentModalOpen(false)}
+                className="rounded-lg px-4 py-2 font-sans text-sm font-medium text-texte-secondaire transition-colors hover:bg-bordure-defaut"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleAcceptConsent}
+                disabled={grantingConsent}
+                className="rounded-lg bg-bleu-institutionnel px-4 py-2 font-sans text-sm font-medium text-texte-inverse transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {grantingConsent ? "Envoi..." : "J'accepte et j'envoie ma vidéo"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
