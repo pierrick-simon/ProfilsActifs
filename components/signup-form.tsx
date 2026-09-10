@@ -93,7 +93,9 @@ export default function SignupForm() {
       }
     }
 
-    window.location.assign("/");
+    window.location.assign(
+      role === "candidat" ? "/inscription/profil" : "/",
+    );
   }
 
   return (
