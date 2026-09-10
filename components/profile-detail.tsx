@@ -181,7 +181,7 @@ export default function ProfileDetail({ userId }: { userId: string }) {
         current
           ? {
               ...current,
-              favory: Math.max(0, current.favory + (next ? 1 : -1)),
+              favory: Math.max(0, (current.favory ?? 0) + (next ? 1 : -1)),
             }
           : current,
       );
