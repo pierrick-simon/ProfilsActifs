@@ -6,22 +6,33 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { authClient } from "@/lib/auth_client";
 import { useViewerRole } from "@/hooks/use-role";
+import { useToast } from "@/components/toast";
 import {
   BriefcaseIcon,
   CheckIcon,
   ChevronRightIcon,
+  DownloadIcon,
   HeartIcon,
   InfoIcon,
   MailIcon,
 } from "@/components/icons";
 
+async function readJson(response: Response) {
+  if (!response.ok) {
+    return null;
+  }
+  return response.json();
+}
+
 export default function AccountMenu() {
   const router = useRouter();
   const pathname = usePathname();
+  const { showError } = useToast();
   const { data: session } = authClient.useSession();
   const { isRecruiter, isAdmin, isCandidate } = useViewerRole();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [needsQuestionnaire, setNeedsQuestionnaire] = useState(false);
 
   useEffect(() => {
@@ -30,10 +41,11 @@ export default function AccountMenu() {
       return;
     }
 
+    const userId = session.user.id;
     let alive = true;
     async function load() {
       try {
-        const response = await fetch(`/api/user/${session.user.id}`);
+        const response = await fetch(`/api/user/${userId}`);
         if (!response.ok) {
           if (alive) {
             setNeedsQuestionnaire(true);
@@ -76,6 +88,107 @@ export default function AccountMenu() {
     router.push("/connexion");
   }
 
+  async function handleExportData() {
+    if (exporting || !session) {
+      return;
+    }
+    const user = session.user;
+    setExporting(true);
+    try {
+      const userId = user.id;
+      const [profileRes, skillsRes, videosRes, contactsRes, formRes] =
+        await Promise.all([
+          fetch(`/api/user/${userId}`),
+          fetch("/api/user/skill"),
+          fetch(
+            `/api/videos?userId=${encodeURIComponent(userId)}&sortBy=date&limit=50`,
+          ),
+          fetch("/api/messages/contacts"),
+          fetch("/api/form"),
+        ]);
+
+      const profile = await readJson(profileRes);
+      if (!profile) {
+        throw new Error("export failed");
+      }
+
+      const skillsData = await readJson(skillsRes);
+      const videosData = await readJson(videosRes);
+      const contactsData = await readJson(contactsRes);
+      const form = await readJson(formRes);
+      const contacts = Array.isArray(contactsData?.contacts)
+        ? contactsData.contacts
+        : [];
+
+      const conversations = await Promise.all(
+        contacts.map(async (contact: { id: string; name?: string }) => {
+          const data = await readJson(
+            await fetch(`/api/messages/${contact.id}?limit=100`),
+          );
+          return {
+            contact,
+            messages: data?.messages ?? [],
+          };
+        }),
+      );
+
+      const questions = Array.isArray(form?.questions) ? form.questions : [];
+      const formVersion = form?.formVersion;
+      const form_answers = await Promise.all(
+        questions.map(async (question: { id: number | string; question?: string }) => {
+          const params = new URLSearchParams({
+            questionId: String(question.id),
+          });
+          if (formVersion != null) {
+            params.set("formVersion", String(formVersion));
+          }
+          const data = await readJson(
+            await fetch(`/api/form/answer?${params.toString()}`),
+          );
+          return {
+            question_id: question.id,
+            question: question.question ?? null,
+            answer: data?.response ?? null,
+          };
+        }),
+      );
+
+      const payload = {
+        exported_at: new Date().toISOString(),
+        account: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image ?? null,
+          role: user.role ?? null,
+        },
+        profile,
+        skills: skillsData?.skills ?? [],
+        videos: videosData?.items ?? [],
+        conversations,
+        form_answers,
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "mes-donnees.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      setOpen(false);
+    } catch {
+      showError(
+        "Impossible d'exporter vos données.",
+        "Export échoué",
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
+
   async function handleDeleteAccount() {
     const confirmed = window.confirm(
       "Cette action supprimera définitivement votre compte et toutes vos données. Elle est irréversible. Continuer ?"
@@ -114,7 +227,7 @@ export default function AccountMenu() {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-0 cursor-default"
           />
-          <div className="absolute bottom-full left-0 z-10 mb-2 w-52 overflow-hidden rounded-xl border border-bordure-defaut bg-fond-page p-1 shadow-[0px_16px_32px_-12px_rgba(14,18,27,0.1)]">
+          <div className="absolute bottom-full left-0 z-10 mb-2 w-60 overflow-hidden rounded-xl border border-bordure-defaut bg-fond-page p-1 shadow-[0px_16px_32px_-12px_rgba(14,18,27,0.1)]">
             <Link
               href="/messages"
               onClick={() => setOpen(false)}
@@ -155,8 +268,17 @@ export default function AccountMenu() {
             )}
             <button
               type="button"
+              onClick={handleExportData}
+              disabled={loading || exporting}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-texte-principal transition-colors hover:bg-fond-neutre disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <DownloadIcon className="size-4 text-texte-tertiaire" />
+              {exporting ? "Export..." : "Exporter mes données"}
+            </button>
+            <button
+              type="button"
               onClick={handleSignOut}
-              disabled={loading}
+              disabled={loading || exporting}
               className="flex w-full items-center rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-action-sur-blanc transition-colors hover:bg-fond-neutre disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Déconnexion..." : "Se déconnecter"}
@@ -164,7 +286,7 @@ export default function AccountMenu() {
             <button
               type="button"
               onClick={handleDeleteAccount}
-              disabled={loading}
+              disabled={loading || exporting}
               className="flex w-full items-center rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-action-sur-blanc transition-colors hover:bg-fond-neutre disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "..." : "Supprimer"}
