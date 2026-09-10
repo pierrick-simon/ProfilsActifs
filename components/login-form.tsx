@@ -5,10 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CheckIcon,
-  ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
-  GlobeIcon,
   LockIcon,
   MailIcon,
 } from "@/components/icons";
@@ -44,7 +42,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex h-full flex-col justify-between gap-8 p-8">
+    <div className="flex h-full flex-col gap-8 overflow-y-auto p-8">
       <header className="flex items-center justify-between gap-3">
         <span className="flex size-8 items-center justify-center rounded-lg bg-bleu-institutionnel font-sans text-xs font-medium text-texte-inverse">
           PA
@@ -158,18 +156,6 @@ export default function LoginForm() {
           </button>
         </form>
       </div>
-
-      <footer className="flex items-center justify-between">
-        <span className="font-sans text-sm text-texte-secondaire">© 2026 ProfilsActifs</span>
-        <button
-          type="button"
-          className="flex items-center gap-1 font-sans text-sm text-texte-secondaire transition-colors hover:text-texte-principal"
-        >
-          <GlobeIcon className="size-4" />
-          FR
-          <ChevronDownIcon className="size-4" />
-        </button>
-      </footer>
     </div>
   );
 }

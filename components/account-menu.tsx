@@ -7,6 +7,7 @@ import Image from "next/image";
 import { authClient } from "@/lib/auth_client";
 import { useViewerRole } from "@/hooks/use-role";
 import {
+  BriefcaseIcon,
   CheckIcon,
   ChevronRightIcon,
   HeartIcon,
@@ -95,6 +96,16 @@ export default function AccountMenu() {
               <MailIcon className="size-4 text-texte-tertiaire" />
               Messages
             </Link>
+            {isCandidate && (
+              <Link
+                href="/inscription/profil"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-texte-principal transition-colors hover:bg-fond-neutre"
+              >
+                <BriefcaseIcon className="size-4 text-texte-tertiaire" />
+                Secteur et compétences
+              </Link>
+            )}
             {needsQuestionnaire && (
               <Link
                 href="/inscription/questions"

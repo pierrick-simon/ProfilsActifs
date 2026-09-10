@@ -3,7 +3,7 @@ import { readdirSync, lstatSync, writeFileSync, existsSync, readFileSync } from 
 import { randomUUID } from "crypto";
 import { prisma } from "./db";
 
-const NUM_FORM_QUESTION = 20;
+const MIN_FORM_QUESTION = 1;
 
 export interface SingleChoiceOptions {
     choices: string[];
@@ -147,8 +147,8 @@ export function isFormValid(formData: unknown): { valid: boolean; errors: string
         }
     })
 
-    if (data.questions.length != NUM_FORM_QUESTION) {
-        errors.push(`Le formulaire doit contenir ${NUM_FORM_QUESTION} questions`);
+    if (data.questions.length < MIN_FORM_QUESTION) {
+        errors.push("Le formulaire doit contenir au moins une question");
     }
 
     return {valid: errors.length === 0, errors}

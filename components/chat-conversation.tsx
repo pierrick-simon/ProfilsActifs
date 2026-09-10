@@ -174,7 +174,7 @@ export default function ChatConversation({
               {name}
             </span>
             <span className="font-sans text-sm text-texte-tertiaire">
-              ProfilsActifs
+              Competences +
             </span>
           </div>
           <button

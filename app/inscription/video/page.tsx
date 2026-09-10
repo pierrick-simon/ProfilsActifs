@@ -70,7 +70,7 @@ export default function VideoUploadPage() {
       return;
     }
 
-    router.push("/inscription/questions");
+    router.push("/");
   }
 
   return (
@@ -94,7 +94,7 @@ export default function VideoUploadPage() {
 
       <div className="px-11 pt-8">
         <Link
-          href="/inscription/questions"
+          href="/"
           className="inline-flex items-center gap-0.5 rounded-lg border border-bordure-defaut bg-fond-page py-1.5 pl-1.5 pr-2.5 font-sans text-sm font-medium text-texte-secondaire shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] transition-colors hover:bg-fond-neutre"
         >
           <ChevronLeftIcon className="size-5" />
@@ -180,10 +180,6 @@ export default function VideoUploadPage() {
           />
         </div>
       </div>
-
-      <footer className="flex items-center px-11 py-6">
-        <span className="font-sans text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
-      </footer>
     </main>
   );
 }

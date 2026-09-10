@@ -46,6 +46,7 @@ export async function GET(
       activitySector: true,
       certification: true,
       role: true,
+      showProfile: true,
       video: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -69,6 +70,10 @@ export async function GET(
 
   if (!user) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (session.user.role === "recruiter" && !user.showProfile) {
+    return NextResponse.json({ error: "Hide for now" }, { status: 404 });
   }
 
   const isOwnProfile = session.user.id === userId;
@@ -144,6 +149,7 @@ export async function GET(
       certification_date: user.certification
         ? user.certification.toISOString()
         : null,
+      showProfile: user.showProfile,
       skills,
       ...(isOwnProfile
         ? { favory: favoryCount, favory_today: favoryCountToday }
