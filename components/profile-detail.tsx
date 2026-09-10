@@ -5,8 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   CheckIcon,
+  CloseIcon,
   EyeIcon,
   HeartIcon,
+  InfoIcon,
   MailIcon,
   MapPinIcon,
   ShareIcon,
@@ -69,7 +71,7 @@ function formatDate(iso: string): string {
 }
 
 export default function ProfileDetail({ userId }: { userId: string }) {
-  const { isRecruiter } = useViewerRole();
+  const { isRecruiter, isCandidate } = useViewerRole();
   const { showError } = useToast();
   const { data: session } = authClient.useSession();
   const viewerId = session?.user?.id ?? null;
@@ -80,6 +82,7 @@ export default function ProfileDetail({ userId }: { userId: string }) {
   const [favorited, setFavorited] = useState(false);
   const [favoriting, setFavoriting] = useState(false);
   const [showProfile, setShowProfile] = useState(true);
+  const [askQuestionnaire, setAskQuestionnaire] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -111,6 +114,31 @@ export default function ProfileDetail({ userId }: { userId: string }) {
       alive = false;
     };
   }, [userId, showError]);
+
+  useEffect(() => {
+    if (!isCandidate || !isOwnProfile || !profile || profile.certification_date) {
+      setAskQuestionnaire(false);
+      return;
+    }
+    try {
+      if (sessionStorage.getItem(`questionnaire-prompt-${userId}`)) {
+        setAskQuestionnaire(false);
+        return;
+      }
+    } catch {
+      // sessionStorage indisponible : on affiche quand même.
+    }
+    setAskQuestionnaire(true);
+  }, [isCandidate, isOwnProfile, profile, userId]);
+
+  function dismissQuestionnairePrompt() {
+    try {
+      sessionStorage.setItem(`questionnaire-prompt-${userId}`, "1");
+    } catch {
+      // ignore
+    }
+    setAskQuestionnaire(false);
+  }
 
   async function handleShare() {
     try {
@@ -367,6 +395,67 @@ export default function ProfileDetail({ userId }: { userId: string }) {
           </>
         )}
       </main>
+
+      {askQuestionnaire && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Fermer"
+            onClick={dismissQuestionnairePrompt}
+            className="absolute inset-0 cursor-default bg-texte-principal/40 backdrop-blur-sm"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="questionnaire-prompt-title"
+            className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl bg-fond-page shadow-[0px_16px_32px_-12px_rgba(14,18,27,0.25)]"
+          >
+            <div className="flex items-start justify-between border-b border-bordure-defaut px-6 py-5">
+              <div className="flex items-start gap-4">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-fond-bleu-clair text-bleu-institutionnel">
+                  <InfoIcon className="size-5" />
+                </span>
+                <div className="flex flex-col">
+                  <h2
+                    id="questionnaire-prompt-title"
+                    className="font-sans text-lg font-semibold text-texte-principal"
+                  >
+                    Questionnaire optionnel
+                  </h2>
+                  <p className="mt-1 font-sans text-sm text-texte-tertiaire">
+                    Souhaitez-vous répondre au questionnaire de certification ?
+                    C&apos;est optionnel, vous pourrez le faire plus tard depuis le menu.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={dismissQuestionnairePrompt}
+                aria-label="Fermer"
+                className="rounded-lg p-1 text-texte-tertiaire transition-colors hover:bg-fond-neutre hover:text-texte-secondaire"
+              >
+                <CloseIcon className="size-5" />
+              </button>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-bordure-defaut bg-fond-neutre px-6 py-4">
+              <button
+                type="button"
+                onClick={dismissQuestionnairePrompt}
+                className="rounded-lg px-4 py-2 font-sans text-sm font-medium text-texte-secondaire transition-colors hover:bg-bordure-defaut"
+              >
+                Plus tard
+              </button>
+              <Link
+                href="/inscription/questions"
+                onClick={dismissQuestionnairePrompt}
+                className="rounded-lg bg-bleu-institutionnel px-4 py-2 font-sans text-sm font-medium text-texte-inverse transition-colors hover:brightness-110"
+              >
+                Commencer
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
