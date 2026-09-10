@@ -133,6 +133,7 @@ model user {
   createdAt      DateTime        @db.Timestamptz(3)
   updatedAt      DateTime        @db.Timestamptz(3)
   acceptedTerms  Boolean
+  showProfile    Boolean         @default(true)
   localisation   String
   dateOfBirth    DateTime        @db.Date
   certification  DateTime?       @db.Timestamptz(3)

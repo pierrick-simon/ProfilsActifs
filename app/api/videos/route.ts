@@ -27,8 +27,6 @@ export async function GET(request: NextRequest) {
   const validatedParam = searchParams.get("validated");
   const limit = Math.min(Number(searchParams.get("limit") ?? 20) || 20, 50);
 
-  // Liste blanche stricte : seul un critère professionnel peut un jour s'ajouter
-  // ici. Aucun critère de popularité (vues, likes...) ne doit devenir un sortBy valide.
   const sortBy = searchParams.get("sortBy") ?? "date";
   if (sortBy !== "date") {
     return NextResponse.json({ error: "Critère de tri non pris en charge" }, { status: 400 });
@@ -45,6 +43,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: filters.error }, { status: 400 });
   }
 
+  const showProfileWhere = isOwnVideos || isAdmin ? {} : { showProfile: true };
+
+  const userWhere = {
+    ...((filters.where as { user?: Record<string, unknown> }).user ?? {}),
+    ...showProfileWhere,
+  };
+
   const videos = await prisma.video.findMany({
     where: {
       ...(requestedUserId ? { userId: requestedUserId } : {}),
@@ -54,6 +59,7 @@ export async function GET(request: NextRequest) {
           : {}
         : { validated: true }),
       ...filters.where,
+      ...(Object.keys(userWhere).length > 0 ? { user: userWhere } : {}),
       ...catalogCursorWhere(cursor),
     },
     orderBy: CATALOG_ORDER_BY,
@@ -84,9 +90,6 @@ export async function GET(request: NextRequest) {
   const hasMore = videos.length > limit;
   const items = hasMore ? videos.slice(0, limit) : videos;
 
-  // Playback URL/status is resolved live against each video's own provider rather than
-  // trusted verbatim from the row, so a provider outage degrades the response instead of
-  // serving a stale "ready" that would then fail client-side.
   const resolvedItems = await Promise.all(
     items.map(async ({ provider, providerId, status, ...rest }) => {
       const playback = await resolveVideoPlayback({ provider, providerId, status });
@@ -128,12 +131,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Rejet rapide des types déclarés manifestement invalides (contrôle peu coûteux, mais pas suffisant à lui seul)
   if (!extensionForMimeType(file.type) || !ALLOWED_VIDEO_MIME_TYPES.includes(file.type)) {
     return NextResponse.json({ error: "Type de vidéo non pris en charge" }, { status: 415 });
   }
 
-  // Ne lire que les premiers octets pour détecter la signature du fichier (évite de charger tout le fichier en mémoire)
   const headerChunk = Buffer.from(await file.slice(0, 4100).arrayBuffer());
   const detected = await fileTypeFromBuffer(headerChunk);
 
