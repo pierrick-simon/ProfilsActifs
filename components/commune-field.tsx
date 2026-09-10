@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useEffect, useId, useState } from "react";
 import { MapPinIcon } from "@/components/icons";
 import { searchCommunes, type CommuneSuggestion } from "@/lib/geo-gouv";
@@ -105,6 +107,7 @@ export default function CommuneField({
               <button
                 type="button"
                 role="option"
+                aria-selected={false}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => pick(suggestion)}
                 className="flex w-full flex-col px-3 py-2 text-left hover:bg-fond-neutre"

@@ -21,7 +21,7 @@ export const options = {
 
 const BASE_URL = 'http://localhost:3000';
 
-export default function () {
+export default function performanceTest() {
   let resHome = http.get(`${BASE_URL}/`, { tags: { name: 'home' } });
   check(resHome, {
     'Accueil OK (200)': (r) => r.status === 200,

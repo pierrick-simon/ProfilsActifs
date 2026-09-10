@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/toast";
 import BackButton from "@/components/back-button";

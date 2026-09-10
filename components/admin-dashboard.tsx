@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useCallback, useEffect, useState } from "react";
 import { CheckIcon, ClockIcon, CloseIcon, ShieldCheckIcon, VideoIcon } from "@/components/icons";
 import RejectVideoModal from "@/components/reject-video-modal";

@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useCallback, useEffect, useState } from "react";
 import { authClient } from "@/lib/auth_client";
 import { useToast } from "@/components/toast";

@@ -1,7 +1,7 @@
 import path from "path";
 import {NextRequest, NextResponse} from "next/server";
 import {readFile} from "fs/promises";
-import {getFormFileName, getFormVersionFromFileName, getMostRecentFile, isFormValid, saveNewForm} from "@/lib/form";
+import {getFormVersionFromFileName, getMostRecentFile, isFormValid, saveNewForm} from "@/lib/form";
 import {auth} from "@/lib/auth";
 
 /**
@@ -23,7 +23,7 @@ import {auth} from "@/lib/auth";
  *         description: Form file unreadable (invalid JSON).
  */
 export async function GET(
-    request: NextRequest
+    _request: NextRequest
 ) {
 
     const mostRecentFile = getMostRecentFile();
@@ -35,7 +35,7 @@ export async function GET(
     let form;
     try {
         form = JSON.parse(await readFile(mostRecentFile, "utf-8"));
-    } catch (error) {
+    } catch {
         return NextResponse.json({error: "Failed to parse JSON"}, {status: 500});
     }
 

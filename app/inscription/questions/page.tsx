@@ -43,19 +43,19 @@ const TYPE_HINT: Record<QuestionType, string> = {
   "numeric": "Indiquez un nombre.",
 };
 
-function iconForType(type: QuestionType) {
+function QuestionIcon({ type }: { type: QuestionType }) {
   switch (type) {
     case "date":
-      return CalendarIcon;
+      return <CalendarIcon className="size-6" />;
     case "true-false":
-      return CheckIcon;
+      return <CheckIcon className="size-6" />;
     case "single-choice":
     case "multiple-choice":
-      return BriefcaseIcon;
+      return <BriefcaseIcon className="size-6" />;
     case "numeric":
-      return InfoIcon;
+      return <InfoIcon className="size-6" />;
     default:
-      return UserIcon;
+      return <UserIcon className="size-6" />;
   }
 }
 
@@ -260,8 +260,6 @@ export default function QuestionsPage() {
     }
   }
 
-  const Icon = question ? iconForType(question.type) : InfoIcon;
-
   function setAnswer(value: AnswerValue) {
     if (!question) {
       return;
@@ -334,7 +332,7 @@ export default function QuestionsPage() {
               <div className="flex flex-col items-center gap-2">
                 <span className="inline-flex items-center justify-center rounded-full bg-gradient-to-b from-fond-neutre to-transparent p-4 outline outline-1 -outline-offset-1 outline-bordure-forte backdrop-blur">
                   <span className="flex size-16 items-center justify-center rounded-full bg-fond-page text-bleu-institutionnel shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] outline outline-1 -outline-offset-1 outline-bordure-defaut">
-                    <Icon className="size-6" />
+                    {question ? <QuestionIcon type={question.type} /> : <InfoIcon className="size-6" />}
                   </span>
                 </span>
                 <div className="flex flex-col items-center gap-1 text-center">
