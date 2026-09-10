@@ -37,7 +37,6 @@ export default function ProfilCompetencesPage() {
   const [initialSelected, setInitialSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [certified, setCertified] = useState(false);
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -76,7 +75,6 @@ export default function ProfilCompetencesPage() {
           ) {
             setSector(userData.activity);
           }
-          setCertified(Boolean(userData?.certification_date));
         }
       } catch {
         if (alive) {
@@ -149,11 +147,7 @@ export default function ProfilCompetencesPage() {
         }
       }
 
-      if (certified && session?.user?.id) {
-        router.push(`/profil/${session.user.id}`);
-        return;
-      }
-      router.push("/inscription/questions");
+      router.push("/");
     } catch {
       showError(
         "Impossible d'enregistrer le secteur et les compétences.",
