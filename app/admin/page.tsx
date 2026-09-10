@@ -1,27 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  ArrowUpRightIcon,
-  CalendarIcon,
   CheckIcon,
-  ChevronDownIcon,
   ClockIcon,
   CloseIcon,
+  HeartIcon,
+  MailIcon,
   PlayIcon,
   ShieldCheckIcon,
   UserIcon,
-  VideoIcon,
 } from "@/components/icons";
 import RejectVideoModal from "@/components/reject-video-modal";
 import UserTable, { type ListedUser } from "@/components/user-table";
 import FormEditor from "@/components/form-editor";
+import SkillEditor from "@/components/skill-editor";
 import BackButton from "@/components/back-button";
 import RequireRegistration, { RequireAdmin } from "@/components/require-registration";
 import { useToast } from "@/components/toast";
 import { authClient } from "@/lib/auth_client";
 
-const STAT_DAYS = 7;
+type AdminView = "dashboard" | "moderation" | "users" | "form" | "skills";
+
+type PlatformStats = {
+  activeProfiles: number;
+  certificationRate: number;
+  interactions: {
+    likes: number;
+    favorites: number;
+    messages: number;
+    total: number;
+  };
+};
 
 type PendingVideo = {
   id: string;
@@ -69,72 +79,20 @@ function formatSubmittedAt(iso?: string): string {
   return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-function startOfDay(date: Date): Date {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
-
-function statWindow(now = new Date()) {
-  const start = startOfDay(now);
-  start.setDate(start.getDate() - (STAT_DAYS - 1));
-  const prevStart = new Date(start);
-  prevStart.setDate(prevStart.getDate() - STAT_DAYS);
-  return { start, end: now, prevStart, prevEnd: start };
-}
-
-function formatRange(start: Date, end: Date): string {
-  const options: Intl.DateTimeFormatOptions = {
-    day: "numeric",
-    month: "short",
-  };
-  return `${start.toLocaleDateString("fr-FR", options)} – ${end.toLocaleDateString("fr-FR", options)}`;
-}
-
 function formatCount(value: number): string {
   return value.toLocaleString("fr-FR");
 }
 
-function formatAvg(value: number): string {
+function formatRate(value: number): string {
   return value.toLocaleString("fr-FR", {
-    maximumFractionDigits: 1,
+    style: "percent",
+    maximumFractionDigits: 2,
   });
 }
 
-function inRange(iso: string | Date | undefined, from: Date, to: Date): boolean {
-  if (!iso) {
-    return false;
-  }
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return false;
-  }
-  return date >= from && date < to;
-}
-
-function formatPercentDelta(current: number, previous: number): string | null {
-  if (previous === 0 && current === 0) {
-    return null;
-  }
-  if (previous === 0) {
-    return "+100 %";
-  }
-  const pct = ((current - previous) / previous) * 100;
-  if (Math.abs(pct) < 0.05) {
-    return null;
-  }
-  const rounded =
-    Math.abs(pct) >= 10 ? Math.round(pct) : Math.round(pct * 10) / 10;
-  const sign = rounded > 0 ? "+" : "−";
-  return `${sign}${Math.abs(rounded).toLocaleString("fr-FR")} %`;
-}
-
-function formatAbsDelta(current: number, previous: number): string | null {
-  const diff = current - previous;
-  if (Math.abs(diff) < 0.05) {
-    return null;
-  }
-  return formatAvg(Math.abs(diff));
+function asCount(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
 async function fetchAllVideos(): Promise<VideoItem[]> {
@@ -188,6 +146,32 @@ async function fetchAllUsers(): Promise<ListedUser[]> {
   return users;
 }
 
+async function fetchStats(): Promise<PlatformStats> {
+  const response = await fetch("/api/stat");
+  if (!response.ok) {
+    throw new Error("stats unavailable");
+  }
+  const data = await response.json();
+  const raw = (
+    typeof data.interactions === "object" && data.interactions !== null
+      ? data.interactions
+      : {}
+  ) as Record<string, unknown>;
+  const likes = asCount(raw.likes);
+  const favorites = asCount(raw.favorites);
+  const messages = asCount(raw.messages);
+  const total =
+    raw.total === undefined || raw.total === null
+      ? likes + favorites + messages
+      : asCount(raw.total);
+  const rate = Number(data.certification_rate);
+  return {
+    activeProfiles: asCount(data.active_profiles),
+    certificationRate: Number.isFinite(rate) ? rate : 0,
+    interactions: { likes, favorites, messages, total },
+  };
+}
+
 function toPending(item: VideoItem): PendingVideo {
   return {
     id: item.id,
@@ -215,8 +199,9 @@ function AdminModeration() {
   const [actingId, setActingId] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<PendingVideo | null>(null);
   const [watching, setWatching] = useState<PendingVideo | null>(null);
-  const [view, setView] = useState<"moderation" | "users" | "form">("moderation");
-  const windowBounds = useMemo(() => statWindow(), []);
+  const [view, setView] = useState<AdminView>("dashboard");
+  const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -252,6 +237,34 @@ function AdminModeration() {
     };
   }, [showError]);
 
+  useEffect(() => {
+    let alive = true;
+    async function loadStats() {
+      setStatsLoading(true);
+      try {
+        const value = await fetchStats();
+        if (alive) {
+          setStats(value);
+        }
+      } catch {
+        if (alive) {
+          showError(
+            "Impossible de charger les statistiques.",
+            "Panneau de bord",
+          );
+        }
+      } finally {
+        if (alive) {
+          setStatsLoading(false);
+        }
+      }
+    }
+    loadStats();
+    return () => {
+      alive = false;
+    };
+  }, [showError]);
+
   const pendingItems = useMemo(
     () => videos.filter((video) => video.validated === false),
     [videos],
@@ -260,36 +273,6 @@ function AdminModeration() {
     () => pendingItems.map(toPending),
     [pendingItems],
   );
-
-  const stats = useMemo(() => {
-    const { start, end, prevStart, prevEnd } = windowBounds;
-    const inscriptions = users.filter((user) =>
-      inRange(user.createdAt, start, end),
-    ).length;
-    const inscriptionsPrev = users.filter((user) =>
-      inRange(user.createdAt, prevStart, prevEnd),
-    ).length;
-    const videosNow = videos.filter((video) =>
-      inRange(video.createdAt, start, end),
-    ).length;
-    const videosPrev = videos.filter((video) =>
-      inRange(video.createdAt, prevStart, prevEnd),
-    ).length;
-    const avg = videosNow / STAT_DAYS;
-    const avgPrev = videosPrev / STAT_DAYS;
-    return {
-      totalUsers: users.length,
-      inscriptions,
-      userDelta: formatPercentDelta(inscriptions, inscriptionsPrev),
-      userTrend: inscriptions >= inscriptionsPrev ? "up" : "down",
-      avgPerDay: avg,
-      avgDelta: formatAbsDelta(avg, avgPrev),
-      avgTrend: avg >= avgPrev ? "up" : "down",
-      inscriptionsDelta: formatAbsDelta(inscriptions, inscriptionsPrev),
-      inscriptionsTrend:
-        inscriptions >= inscriptionsPrev ? "up" : "down",
-    };
-  }, [users, videos, windowBounds]);
 
   async function approve(id: string) {
     if (actingId) {
@@ -351,23 +334,9 @@ function AdminModeration() {
                 Administrateur
               </h1>
               <p className="font-sans text-sm text-texte-tertiaire">
-                Espace de modération
+                Espace d'administration
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-full border border-bordure-defaut bg-fond-page px-4 py-2 font-sans text-sm font-medium text-texte-secondaire shadow-sm transition-colors hover:bg-fond-neutre"
-            >
-              7 derniers jours
-              <ChevronDownIcon className="size-4 text-texte-tertiaire" />
-            </button>
-            <span className="hidden items-center gap-2 rounded-full border border-bordure-defaut bg-fond-neutre px-4 py-2 font-sans text-sm font-medium text-texte-secondaire sm:flex">
-              <CalendarIcon className="size-4 text-texte-tertiaire" />
-              {formatRange(windowBounds.start, windowBounds.end)}
-            </span>
           </div>
         </div>
       </header>
@@ -376,9 +345,14 @@ function AdminModeration() {
 
       {/* Contenu */}
       <main className="flex flex-1 flex-col bg-fond-neutre/40 p-6 md:p-10">
-        {/* Bascule modération / utilisateurs / questions */}
+        {/* Bascule des vues admin */}
         <div className="mb-10 flex justify-center">
-          <div className="inline-flex rounded-xl border border-bordure-defaut bg-fond-neutre p-1.5 shadow-sm">
+          <div className="inline-flex flex-wrap justify-center rounded-xl border border-bordure-defaut bg-fond-neutre p-1.5 shadow-sm">
+            <ViewTab
+              label="Panneau de bord"
+              active={view === "dashboard"}
+              onClick={() => setView("dashboard")}
+            />
             <ViewTab
               label="Modération"
               active={view === "moderation"}
@@ -394,79 +368,24 @@ function AdminModeration() {
               active={view === "form"}
               onClick={() => setView("form")}
             />
+            <ViewTab
+              label="Compétences"
+              active={view === "skills"}
+              onClick={() => setView("skills")}
+            />
           </div>
         </div>
 
-        {view === "users" ? (
+        {view === "dashboard" ? (
+          <DashboardView stats={stats} loading={statsLoading} />
+        ) : view === "users" ? (
           <UserTable users={users} videos={videos} loading={loading} />
         ) : view === "form" ? (
           <FormEditor />
+        ) : view === "skills" ? (
+          <SkillEditor />
         ) : (
           <div className="flex flex-col gap-10">
-            {/* Statistiques */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-              {/* Carte principale */}
-              <div className="relative flex flex-col justify-center overflow-hidden rounded-2xl border border-bordure-defaut bg-fond-page p-6 shadow-sm lg:col-span-4">
-                <span className="pointer-events-none absolute right-0 top-0 p-6 text-texte-principal opacity-5">
-                  <UserIcon className="size-24" />
-                </span>
-                <h2 className="mb-2 font-sans text-sm font-medium text-texte-tertiaire">
-                  Utilisateurs inscrits
-                </h2>
-                <div className="flex items-baseline gap-3">
-                  <span className="font-sans text-4xl font-bold tracking-tight text-texte-principal">
-                    {loading ? "—" : formatCount(stats.totalUsers)}
-                  </span>
-                  {!loading && stats.userDelta ? (
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-sans text-xs font-semibold ${
-                          stats.userTrend === "up"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-fond-neutre text-texte-secondaire"
-                        }`}
-                      >
-                        {stats.userTrend === "up" ? (
-                          <ArrowUpRightIcon className="size-3" />
-                        ) : null}
-                        {stats.userDelta}
-                      </span>
-                      <span className="font-sans text-xs text-texte-tertiaire">
-                        vs semaine préc.
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Sous-stats */}
-              <div className="flex flex-col divide-y divide-bordure-defaut overflow-hidden rounded-2xl border border-bordure-defaut bg-fond-page shadow-sm sm:flex-row sm:divide-x sm:divide-y-0 lg:col-span-8">
-                <div className="flex flex-1 flex-col justify-center p-6">
-                  <p className="mb-1 font-sans text-sm font-medium text-texte-tertiaire">
-                    Vidéos à valider
-                  </p>
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-sans text-2xl font-bold text-texte-principal">
-                      {loading ? "—" : pending.length}
-                    </span>
-                    <VideoIcon className="size-5 text-bleu-institutionnel opacity-30" />
-                  </div>
-                </div>
-                <StatCell
-                  label="Moyenne / jour"
-                  value={loading ? "—" : formatAvg(stats.avgPerDay)}
-                  delta={loading ? null : stats.avgDelta}
-                  up={stats.avgTrend === "up"}
-                />
-                <StatCell
-                  label="Inscriptions"
-                  value={loading ? "—" : formatCount(stats.inscriptions)}
-                  delta={loading ? null : stats.inscriptionsDelta}
-                  up={stats.inscriptionsTrend === "up"}
-                />
-              </div>
-            </div>
-
             <div>
               <div className="mb-6 flex items-center gap-3">
                 <h3 className="font-sans text-lg font-bold text-texte-principal">
@@ -533,6 +452,108 @@ function AdminModeration() {
   );
 }
 
+function DashboardView({
+  stats,
+  loading,
+}: {
+  stats: PlatformStats | null;
+  loading: boolean;
+}) {
+  if (!loading && !stats) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-bordure-forte bg-fond-page p-12 text-center">
+        <span className="mb-4 flex size-16 items-center justify-center rounded-full bg-fond-neutre text-texte-tertiaire">
+          <ShieldCheckIcon className="size-7" />
+        </span>
+        <h4 className="mb-1 font-sans text-base font-semibold text-texte-principal">
+          Statistiques indisponibles
+        </h4>
+        <p className="font-sans text-sm text-texte-tertiaire">
+          Impossible de récupérer les indicateurs de la plateforme.
+        </p>
+      </div>
+    );
+  }
+
+  const rate = stats?.certificationRate ?? 0;
+  const barWidth = Math.min(100, Math.max(0, rate * 100));
+  const interactions = stats?.interactions;
+
+  return (
+    <div className="flex flex-col gap-10">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="relative flex flex-col justify-center overflow-hidden rounded-2xl border border-bordure-defaut bg-fond-page p-6 shadow-sm lg:col-span-4">
+          <span className="pointer-events-none absolute right-0 top-0 p-6 text-texte-principal opacity-5">
+            <UserIcon className="size-24" />
+          </span>
+          <h2 className="mb-2 font-sans text-sm font-medium text-texte-tertiaire">
+            Profils actifs
+          </h2>
+          <span className="font-sans text-4xl font-bold tracking-tight text-texte-principal">
+            {loading ? "—" : formatCount(stats?.activeProfiles ?? 0)}
+          </span>
+          <p className="mt-2 font-sans text-xs text-texte-tertiaire">
+            Candidats non bannis
+          </p>
+        </div>
+
+        <div className="relative flex flex-col justify-center overflow-hidden rounded-2xl border border-bordure-defaut bg-fond-page p-6 shadow-sm lg:col-span-8">
+          <span className="pointer-events-none absolute right-0 top-0 p-6 text-texte-principal opacity-5">
+            <ShieldCheckIcon className="size-24" />
+          </span>
+          <h2 className="mb-2 font-sans text-sm font-medium text-texte-tertiaire">
+            Taux de certification
+          </h2>
+          <span className="font-sans text-4xl font-bold tracking-tight text-texte-principal">
+            {loading ? "—" : formatRate(rate)}
+          </span>
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-fond-neutre">
+            <div
+              className="h-full rounded-full bg-bleu-institutionnel"
+              style={{ width: loading ? "0%" : `${barWidth}%` }}
+            />
+          </div>
+          <p className="mt-2 font-sans text-xs text-texte-tertiaire">
+            Profils certifiés parmi les profils actifs
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-6 flex items-center gap-3">
+          <h3 className="font-sans text-lg font-bold text-texte-principal">
+            Interactions
+          </h3>
+          <span className="inline-flex items-center rounded-full border border-bleu-institutionnel/15 bg-fond-bleu-clair px-2.5 py-0.5 font-sans text-xs font-semibold text-bleu-institutionnel">
+            {loading ? "—" : formatCount(interactions?.total ?? 0)} au total
+          </span>
+        </div>
+        <div className="flex flex-col divide-y divide-bordure-defaut overflow-hidden rounded-2xl border border-bordure-defaut bg-fond-page shadow-sm sm:flex-row sm:divide-x sm:divide-y-0">
+          <StatCell
+            label="Total"
+            value={loading ? "—" : formatCount(interactions?.total ?? 0)}
+          />
+          <StatCell
+            label="J'aime"
+            value={loading ? "—" : formatCount(interactions?.likes ?? 0)}
+            icon={<HeartIcon className="size-5 text-bleu-institutionnel opacity-30" />}
+          />
+          <StatCell
+            label="Favoris"
+            value={loading ? "—" : formatCount(interactions?.favorites ?? 0)}
+            icon={<HeartIcon filled className="size-5 text-bleu-institutionnel opacity-30" />}
+          />
+          <StatCell
+            label="Messages"
+            value={loading ? "—" : formatCount(interactions?.messages ?? 0)}
+            icon={<MailIcon className="size-5 text-bleu-institutionnel opacity-30" />}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ViewTab({
   label,
   active,
@@ -560,33 +581,22 @@ function ViewTab({
 function StatCell({
   label,
   value,
-  delta,
-  up,
+  icon,
 }: {
   label: string;
   value: string;
-  delta: string | null;
-  up: boolean;
+  icon?: ReactNode;
 }) {
   return (
     <div className="flex flex-1 flex-col justify-center p-6">
       <p className="mb-1 font-sans text-sm font-medium text-texte-tertiaire">
         {label}
       </p>
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline justify-between gap-2">
         <span className="font-sans text-2xl font-bold text-texte-principal">
           {value}
         </span>
-        {delta ? (
-          <span
-            className={`flex items-center font-sans text-xs font-medium ${
-              up ? "text-emerald-600" : "text-texte-tertiaire"
-            }`}
-          >
-            {up ? <ArrowUpRightIcon className="mr-0.5 size-3" /> : null}
-            {up ? delta : `−${delta}`}
-          </span>
-        ) : null}
+        {icon}
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import {
   HeartIcon,
   InfoIcon,
   MailIcon,
+  ShieldCheckIcon,
 } from "@/components/icons";
 
 export default function AccountMenu() {
@@ -188,6 +189,16 @@ export default function AccountMenu() {
               >
                 <HeartIcon className="size-4 text-texte-tertiaire" />
                 Favoris
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-texte-principal transition-colors hover:bg-fond-neutre"
+              >
+                <ShieldCheckIcon className="size-4 text-texte-tertiaire" />
+                Administration
               </Link>
             )}
             <button
