@@ -113,13 +113,13 @@ function mapUsers(users: ListedUser[], videos: ListedVideo[]): AdminUser[] {
 }
 
 export default function UserTable({
-  users,
-  videos,
-  loading,
+  users = [],
+  videos = [],
+  loading = false,
 }: {
-  users: ListedUser[];
-  videos: ListedVideo[];
-  loading: boolean;
+  users?: ListedUser[];
+  videos?: ListedVideo[];
+  loading?: boolean;
 }) {
   const { showError } = useToast();
   const [userList, setUserList] = useState<AdminUser[]>([]);
