@@ -5,6 +5,30 @@ import { mimeTypeForExtension, UPLOADS_ROOT } from "@/lib/storage";
 
 const FILENAME_PATTERN = /^[a-zA-Z0-9-]+\.[a-zA-Z0-9]+$/;
 
+/**
+ * @swagger
+ * /api/media/{type}/{filename}:
+ *   get:
+ *     tags: [Media]
+ *     description: >
+ *       Serves a public media file uploaded to disk. Only type="images" is
+ *       accepted: videos are intentionally excluded from this route and only ever
+ *       go through /api/videos/stream/{providerId}, which checks rights.
+ *     parameters:
+ *       - in: path
+ *         name: type
+ *         required: true
+ *         schema: { type: string, enum: [images] }
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Image file bytes, cached indefinitely on the client.
+ *       404:
+ *         description: Unsupported type, invalid filename, or file not found.
+ */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ type: string; filename: string }> },

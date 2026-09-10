@@ -3,6 +3,40 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { deleteVideoRecord, resolveVideoPlayback } from "@/lib/videos";
 
+/**
+ * @swagger
+ * /api/videos/{id}:
+ *   patch:
+ *     tags: [Videos]
+ *     description: >
+ *       Admin moderation of a video: toggles its "validated" status. A video that
+ *       is not validated never appears in the recruiter catalog (GET /api/videos).
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [validated]
+ *             properties:
+ *               validated: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Video updated.
+ *       400:
+ *         description: Missing or invalid "validated" field.
+ *       401:
+ *         description: No session.
+ *       403:
+ *         description: Caller is not an admin.
+ *       404:
+ *         description: Video not found.
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -47,6 +81,27 @@ export async function PATCH(
   return NextResponse.json({ ...rest, url: playback.url, status: playback.status });
 }
 
+/**
+ * @swagger
+ * /api/videos/{id}:
+ *   delete:
+ *     tags: [Videos]
+ *     description: Deletes a video (file and record). Restricted to the owner or an admin.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       204:
+ *         description: Video deleted.
+ *       401:
+ *         description: No session.
+ *       403:
+ *         description: Neither owner nor admin.
+ *       404:
+ *         description: Video not found.
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

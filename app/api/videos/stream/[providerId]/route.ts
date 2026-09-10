@@ -8,6 +8,26 @@ import { LocalVideoProvider } from "@/lib/video-provider";
  * Serves local video bytes. Unlike the old /api/media/[type]/[filename] route, this one
  * re-checks the requester's rights on every call — knowing the providerId in the URL is
  * not sufficient by itself, so a leaked link does not grant access on its own.
+ *
+ * @swagger
+ * /api/videos/stream/{providerId}:
+ *   get:
+ *     tags: [Videos]
+ *     description: >
+ *       Serves the bytes of a locally stored video, after checking the requester's
+ *       rights on every call (age, moderation, ownership) — not just when the link
+ *       is generated. Returns 404 whether the video doesn't exist or access is
+ *       denied, so nothing is revealed to an unauthorized caller.
+ *     parameters:
+ *       - in: path
+ *         name: providerId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Video bytes.
+ *       404:
+ *         description: Video not found or access denied.
  */
 export async function GET(
   request: NextRequest,

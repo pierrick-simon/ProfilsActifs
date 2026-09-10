@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
+/**
+ * @swagger
+ * /api/messages/contacts:
+ *   get:
+ *     tags: [Messages]
+ *     description: >
+ *       List of people the logged-in user has exchanged at least one message with,
+ *       sorted by the date of the last message, most recent first.
+ *     responses:
+ *       200:
+ *         description: List of contacts with the date of the last message.
+ *       401:
+ *         description: No session.
+ */
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {

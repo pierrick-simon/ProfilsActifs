@@ -5,6 +5,29 @@ import { ActivitySector } from "@/prisma/prisma/enums";
 
 const VALID_SECTORS = Object.values(ActivitySector);
 
+/**
+ * @swagger
+ * /api/user/activity:
+ *   patch:
+ *     tags: [Users]
+ *     description: Sets the activity sector of the logged-in user's profile.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [activity_sector]
+ *             properties:
+ *               activity_sector: { type: string }
+ *     responses:
+ *       200:
+ *         description: Activity sector updated.
+ *       400:
+ *         description: Missing activity_sector or value outside the ActivitySector enum.
+ *       401:
+ *         description: No session.
+ */
 export async function PATCH(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {
@@ -41,6 +64,18 @@ export async function PATCH(request: NextRequest) {
   );
 }
 
+/**
+ * @swagger
+ * /api/user/activity:
+ *   delete:
+ *     tags: [Users]
+ *     description: Clears the activity sector of the logged-in user's profile.
+ *     responses:
+ *       200:
+ *         description: Activity sector cleared.
+ *       401:
+ *         description: No session.
+ */
 export async function DELETE(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {

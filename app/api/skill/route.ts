@@ -3,6 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
+/**
+ * @swagger
+ * /api/skill:
+ *   get:
+ *     tags: [Skills]
+ *     description: Lists all skills available in the reference table, sorted by name.
+ *     responses:
+ *       200:
+ *         description: List of skills.
+ *       401:
+ *         description: No session.
+ */
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {
@@ -26,6 +38,33 @@ export async function GET(request: NextRequest) {
   );
 }
 
+/**
+ * @swagger
+ * /api/skill:
+ *   post:
+ *     tags: [Skills]
+ *     description: Creates a new skill in the reference table. Restricted to admins.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name: { type: string }
+ *     responses:
+ *       201:
+ *         description: Skill created.
+ *       400:
+ *         description: Missing or empty name.
+ *       401:
+ *         description: No session.
+ *       403:
+ *         description: Caller is not an admin.
+ *       409:
+ *         description: A skill with this name already exists.
+ */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {

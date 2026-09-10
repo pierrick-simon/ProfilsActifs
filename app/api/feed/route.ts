@@ -5,6 +5,29 @@ import { decodeCursor, encodeCursor, DecodedCursor } from "@/lib/cursor";
 import { getAgeGatedWhereClause } from "@/lib/age-gate";
 import { resolveVideoPlayback } from "@/lib/videos";
 
+/**
+ * @swagger
+ * /api/feed:
+ *   get:
+ *     tags: [Feed]
+ *     description: >
+ *       "Explore" feed of validated videos, sorted by creation date descending
+ *       (composite date+id cursor). Applies age-based filtering for the viewer and
+ *       flags, for a logged-in viewer, which profiles they already favorited.
+ *     parameters:
+ *       - in: query
+ *         name: cursor
+ *         schema: { type: string }
+ *         description: Opaque cursor returned by the previous page (next_cursor).
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20, maximum: 50 }
+ *     responses:
+ *       200:
+ *         description: List of videos, next cursor, and has_more flag.
+ *       400:
+ *         description: Invalid pagination cursor.
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 

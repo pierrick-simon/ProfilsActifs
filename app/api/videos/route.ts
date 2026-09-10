@@ -14,6 +14,60 @@ import { ALLOWED_VIDEO_MIME_TYPES, extensionForMimeType, MAX_VIDEO_SIZE_BYTES } 
 import { getActiveVideoProvider } from "@/lib/video-provider";
 import { resolveVideoPlayback } from "@/lib/videos";
 
+/**
+ * @swagger
+ * /api/videos:
+ *   get:
+ *     tags: [Videos]
+ *     description: >
+ *       Paginated catalog of candidate profiles. Sorted by default by profile
+ *       update date then id (two columns, stable and deterministic order),
+ *       filterable by sector, location, certification and skill — never by a
+ *       popularity criterion (views, likes...).
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema: { type: string }
+ *         description: Only return videos owned by this profile.
+ *       - in: query
+ *         name: validated
+ *         schema: { type: boolean }
+ *         description: Moderation filter (only visible to the owner or an admin).
+ *       - in: query
+ *         name: sortBy
+ *         schema: { type: string, enum: [date] }
+ *         description: Sort criterion. Only "date" is accepted today.
+ *       - in: query
+ *         name: sector
+ *         schema: { type: string }
+ *         description: Filter on the profile's activity sector (value of the ActivitySector enum).
+ *       - in: query
+ *         name: location
+ *         schema: { type: string }
+ *         description: Case-insensitive text filter on the profile's location.
+ *       - in: query
+ *         name: certified
+ *         schema: { type: string, enum: ["true", "false"] }
+ *         description: Filter on whether the profile is certified.
+ *       - in: query
+ *         name: skill
+ *         schema: { type: string }
+ *         description: Id of a skill (see GET /api/skill) the profile must have.
+ *       - in: query
+ *         name: cursor
+ *         schema: { type: string }
+ *         description: Opaque cursor returned by the previous page (nextCursor).
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20, maximum: 50 }
+ *     responses:
+ *       200:
+ *         description: Page of videos/profiles and cursor to the next page (nextCursor, null on the last page).
+ *       400:
+ *         description: Invalid sortBy, sector, certified, cursor, or filter parameter.
+ *       401:
+ *         description: No session.
+ */
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {
@@ -103,6 +157,36 @@ export async function GET(request: NextRequest) {
   });
 }
 
+/**
+ * @swagger
+ * /api/videos:
+ *   post:
+ *     tags: [Videos]
+ *     description: >
+ *       Uploads a new profile video (multipart/form-data, "file" field). The type
+ *       is checked both by declared extension and by actual binary signature. The
+ *       created video is not validated by default (validated=false): it only
+ *       appears in the recruiter catalog after moderation.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file: { type: string, format: binary }
+ *     responses:
+ *       201:
+ *         description: Video created (pending processing and moderation).
+ *       400:
+ *         description: Missing file.
+ *       401:
+ *         description: No session.
+ *       413:
+ *         description: Video exceeds the 100MB size limit.
+ *       415:
+ *         description: File type not recognized as an allowed video.
+ */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {
