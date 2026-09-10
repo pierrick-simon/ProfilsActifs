@@ -17,13 +17,6 @@ import {
   MailIcon,
 } from "@/components/icons";
 
-async function readJson(response: Response) {
-  if (!response.ok) {
-    return null;
-  }
-  return response.json();
-}
-
 export default function AccountMenu() {
   const router = useRouter();
   const pathname = usePathname();
@@ -89,93 +82,22 @@ export default function AccountMenu() {
   }
 
   async function handleExportData() {
-    if (exporting || !session) {
+    if (exporting) {
       return;
     }
-    const user = session.user;
     setExporting(true);
     try {
-      const userId = user.id;
-      const [profileRes, skillsRes, videosRes, contactsRes, formRes] =
-        await Promise.all([
-          fetch(`/api/user/${userId}`),
-          fetch("/api/user/skill"),
-          fetch(
-            `/api/videos?userId=${encodeURIComponent(userId)}&sortBy=date&limit=50`,
-          ),
-          fetch("/api/messages/contacts"),
-          fetch("/api/form"),
-        ]);
-
-      const profile = await readJson(profileRes);
-      if (!profile) {
+      const response = await fetch("/api/user/export");
+      if (!response.ok) {
         throw new Error("export failed");
       }
-
-      const skillsData = await readJson(skillsRes);
-      const videosData = await readJson(videosRes);
-      const contactsData = await readJson(contactsRes);
-      const form = await readJson(formRes);
-      const contacts = Array.isArray(contactsData?.contacts)
-        ? contactsData.contacts
-        : [];
-
-      const conversations = await Promise.all(
-        contacts.map(async (contact: { id: string; name?: string }) => {
-          const data = await readJson(
-            await fetch(`/api/messages/${contact.id}?limit=100`),
-          );
-          return {
-            contact,
-            messages: data?.messages ?? [],
-          };
-        }),
-      );
-
-      const questions = Array.isArray(form?.questions) ? form.questions : [];
-      const formVersion = form?.formVersion;
-      const form_answers = await Promise.all(
-        questions.map(async (question: { id: number | string; question?: string }) => {
-          const params = new URLSearchParams({
-            questionId: String(question.id),
-          });
-          if (formVersion != null) {
-            params.set("formVersion", String(formVersion));
-          }
-          const data = await readJson(
-            await fetch(`/api/form/answer?${params.toString()}`),
-          );
-          return {
-            question_id: question.id,
-            question: question.question ?? null,
-            answer: data?.response ?? null,
-          };
-        }),
-      );
-
-      const payload = {
-        exported_at: new Date().toISOString(),
-        account: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image ?? null,
-          role: user.role ?? null,
-        },
-        profile,
-        skills: skillsData?.skills ?? [],
-        videos: videosData?.items ?? [],
-        conversations,
-        form_answers,
-      };
-
-      const blob = new Blob([JSON.stringify(payload, null, 2)], {
-        type: "application/json;charset=utf-8",
-      });
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename="([^"]+)"/);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "mes-donnees.json";
+      link.download = match?.[1] ?? "mes-donnees.json";
       link.click();
       URL.revokeObjectURL(url);
       setOpen(false);
