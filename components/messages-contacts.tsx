@@ -84,9 +84,7 @@ export default function MessagesContacts({
         }
       >
         <header className="flex items-center gap-3.5 border-b border-bordure-defaut px-4 py-3">
-          {!isSidebar && (
-            <BackButton href="/" label="Retour" />
-          )}
+          <BackButton href="/" label="Retour" />
           <span className="font-sans text-lg font-medium leading-tight text-texte-principal">
             Messages
           </span>
