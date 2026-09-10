@@ -43,6 +43,7 @@ type UserProfile = {
   city: string;
   activity: string | null;
   certification_date: string | null;
+  showProfile: boolean;
   favory?: number;
   favory_today?: number;
   video_url: string | null;
@@ -78,6 +79,7 @@ export default function ProfileDetail({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [favorited, setFavorited] = useState(false);
   const [favoriting, setFavoriting] = useState(false);
+  const [showProfile, setShowProfile] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -91,6 +93,7 @@ export default function ProfileDetail({ userId }: { userId: string }) {
         const data: UserProfile = await response.json();
         if (alive) {
           setProfile(data);
+          setShowProfile(Boolean(data.showProfile));
           setFavorited(Boolean(data.is_favorited));
         }
       } catch {
@@ -144,6 +147,27 @@ export default function ProfileDetail({ userId }: { userId: string }) {
       showError("Impossible de mettre à jour les favoris.", "Favoris");
     } finally {
       setFavoriting(false);
+    }
+  }
+
+  async function handleChangeAccountShow() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/user/show-profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ show_profile: !showProfile }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Failed to change show profile");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setShowProfile(!showProfile);
     }
   }
 
@@ -272,21 +296,36 @@ export default function ProfileDetail({ userId }: { userId: string }) {
                 )}
 
                 {isOwnProfile && (
-                  <div className="mb-6 flex flex-col gap-1 rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-2.5">
-                    <span className="font-sans text-xs text-texte-tertiaire">
-                      Statut de la vidéo
-                    </span>
-                    <span className="font-sans text-sm font-medium text-texte-principal">
-                      {profile.video_validated
-                        ? "Validée"
-                        : profile.video_url
-                          ? "En attente de validation"
-                          : "Aucune vidéo"}
-                      {profile.video_status
-                        ? ` · ${STATUS_LABELS[profile.video_status] ?? profile.video_status}`
-                        : ""}
-                    </span>
-                  </div>
+                  <>
+                    <div className="mb-6 flex flex-col gap-1 rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-2.5">
+                      <span className="font-sans text-xs text-texte-tertiaire">
+                        Statut de la vidéo
+                      </span>
+                      <span className="font-sans text-sm font-medium text-texte-principal">
+                        {profile.video_validated
+                          ? "Validée"
+                          : profile.video_url
+                            ? "En attente de validation"
+                            : "Aucune vidéo"}
+                        {profile.video_status
+                          ? ` · ${STATUS_LABELS[profile.video_status] ?? profile.video_status}`
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="mb-6 flex flex-col gap-1 rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-2.5">
+                    <button
+                        type="button"
+                        onClick={handleChangeAccountShow}
+                        disabled={loading}
+                        className="mb-3 flex w-full items-center justify-center rounded-lg border border-bordure-defaut bg-fond-page px-4 py-2.5 font-sans text-sm font-medium text-texte-secondaire transition-colors hover:bg-fond-neutre"
+                      >
+                        {showProfile ? "Cacher mon profile" : "Montrer mon profile" }
+                      </button>
+                      <span className="font-sans text-sm font-medium text-texte-principal">
+                        {showProfile ? "*Le profile est disponible dans le catalogue." : "*Le profile n'est pas disponible dans le catalogue."}
+                      </span>
+                    </div>
+                  </>
                 )}
 
                 {isOwnProfile && !profile.video_url && (
