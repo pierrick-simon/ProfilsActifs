@@ -5,21 +5,11 @@ import {
   ChevronRightIcon,
 } from "@/components/icons";
 
-const navLinks = [
-  { label: "Candidats", badge: "NEW" },
-  { label: "Recruteurs", dropdown: true },
-  { label: "Ressources" },
-  { label: "À propos" },
-  { label: "Contact" },
-];
-
 const features = [
   "Profils vidéo certifiés",
   "Mise en relation directe",
   "Accompagnement personnalisé",
 ];
-
-const partners = ["France Travail", "APEC", "Mission Locale", "CIDJ", "Cap Emploi"];
 
 export default function LandingHero() {
   return (
