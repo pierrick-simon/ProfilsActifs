@@ -76,6 +76,33 @@ export default function AccountMenu() {
     router.push("/connexion");
   }
 
+  async function handleDeleteAccount() {
+    const confirmed = window.confirm(
+      "Cette action supprimera définitivement votre compte et toutes vos données. Elle est irréversible. Continuer ?"
+    );
+    if (!confirmed) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/user", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: true }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Failed to delete account");
+      }
+
+      await authClient.signOut();
+      router.push("/connexion");
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="fixed bottom-4 left-4 z-40">
       {open && (
@@ -133,6 +160,14 @@ export default function AccountMenu() {
               className="flex w-full items-center rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-action-sur-blanc transition-colors hover:bg-fond-neutre disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Déconnexion..." : "Se déconnecter"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={loading}
+              className="flex w-full items-center rounded-lg px-3 py-2 text-left font-sans text-sm font-medium text-action-sur-blanc transition-colors hover:bg-fond-neutre disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "..." : "Supprimer"}
             </button>
           </div>
         </>
