@@ -75,6 +75,7 @@ function catalogQuery(params: {
   sector: string;
   location: string;
   certified: CertifiedFilter;
+  skill: string;
 }): string | null {
   if (!params.canBrowse && !params.userId) {
     return null;
@@ -99,8 +100,16 @@ function catalogQuery(params: {
   if (params.certified === "true" || params.certified === "false") {
     search.set("certified", params.certified);
   }
+  if (params.skill) {
+    search.set("skill", params.skill);
+  }
   return `/api/videos?${search.toString()}`;
 }
+
+type CatalogSkill = {
+  id: string;
+  name: string;
+};
 
 export default function ProfileGrid() {
   const { isRecruiter, isAdmin, isPending: rolePending } = useViewerRole();
@@ -119,14 +128,43 @@ export default function ProfileGrid() {
   const [sector, setSector] = useState("");
   const [location, setLocation] = useState("");
   const [certified, setCertified] = useState<CertifiedFilter>("all");
+  const [skill, setSkill] = useState("");
   const [draftSector, setDraftSector] = useState("");
   const [draftLocation, setDraftLocation] = useState("");
   const [draftCertified, setDraftCertified] = useState<CertifiedFilter>("all");
+  const [draftSkill, setDraftSkill] = useState("");
+  const [skills, setSkills] = useState<CatalogSkill[]>([]);
 
   const activeFilterCount =
     (sector ? 1 : 0) +
     (location ? 1 : 0) +
-    (certified !== "all" ? 1 : 0);
+    (certified !== "all" ? 1 : 0) +
+    (skill ? 1 : 0);
+
+  useEffect(() => {
+    if (isPending || rolePending || !canBrowse) {
+      return;
+    }
+    let alive = true;
+    async function loadSkills() {
+      try {
+        const response = await fetch("/api/skill");
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        if (alive && Array.isArray(data.skills)) {
+          setSkills(data.skills);
+        }
+      } catch {
+        // le filtre reste vide si le catalogue de compétences est indisponible
+      }
+    }
+    loadSkills();
+    return () => {
+      alive = false;
+    };
+  }, [isPending, rolePending, canBrowse]);
 
   useEffect(() => {
     if (isPending || rolePending) {
@@ -144,6 +182,7 @@ export default function ProfileGrid() {
           sector,
           location,
           certified,
+          skill,
         });
 
         if (!url) {
@@ -204,6 +243,7 @@ export default function ProfileGrid() {
     sector,
     location,
     certified,
+    skill,
   ]);
 
   const displayed = useMemo(() => {
@@ -234,6 +274,7 @@ export default function ProfileGrid() {
     setDraftSector(sector);
     setDraftLocation(location);
     setDraftCertified(certified);
+    setDraftSkill(skill);
     setFiltersOpen((open) => !open);
   }
 
@@ -241,6 +282,7 @@ export default function ProfileGrid() {
     setSector(draftSector);
     setLocation(draftLocation.trim());
     setCertified(draftCertified);
+    setSkill(draftSkill);
     setPage(0);
     setPageCursors([null]);
     setFiltersOpen(false);
@@ -251,9 +293,11 @@ export default function ProfileGrid() {
     setSector("");
     setLocation("");
     setCertified("all");
+    setSkill("");
     setDraftSector("");
     setDraftLocation("");
     setDraftCertified("all");
+    setDraftSkill("");
     setPage(0);
     setPageCursors([null]);
     setFiltersOpen(false);
@@ -317,9 +361,12 @@ export default function ProfileGrid() {
               sector={draftSector}
               location={draftLocation}
               certified={draftCertified}
+              skill={draftSkill}
+              skills={skills}
               onSector={setDraftSector}
               onLocation={setDraftLocation}
               onCertified={setDraftCertified}
+              onSkill={setDraftSkill}
               onApply={applyFilters}
               onReset={resetFilters}
             />
@@ -361,18 +408,24 @@ function CatalogFilters({
   sector,
   location,
   certified,
+  skill,
+  skills,
   onSector,
   onLocation,
   onCertified,
+  onSkill,
   onApply,
   onReset,
 }: {
   sector: string;
   location: string;
   certified: CertifiedFilter;
+  skill: string;
+  skills: CatalogSkill[];
   onSector: (value: string) => void;
   onLocation: (value: string) => void;
   onCertified: (value: CertifiedFilter) => void;
+  onSkill: (value: string) => void;
   onApply: () => void;
   onReset: () => void;
 }) {
@@ -381,7 +434,7 @@ function CatalogFilters({
 
   return (
     <form
-      className="mt-4 grid gap-3 rounded-xl border border-bordure-defaut bg-fond-neutre/60 p-4 sm:grid-cols-3"
+      className="mt-4 grid gap-3 rounded-xl border border-bordure-defaut bg-fond-neutre/60 p-4 sm:grid-cols-2 lg:grid-cols-4"
       onSubmit={(event) => {
         event.preventDefault();
         onApply();
@@ -436,7 +489,25 @@ function CatalogFilters({
         </select>
       </label>
 
-      <div className="flex flex-wrap justify-end gap-2 sm:col-span-3">
+      <label className="flex flex-col gap-1">
+        <span className="font-sans text-xs font-semibold uppercase tracking-wider text-texte-tertiaire">
+          Compétence
+        </span>
+        <select
+          value={skill}
+          onChange={(event) => onSkill(event.target.value)}
+          className={fieldClass}
+        >
+          <option value="">Toutes</option>
+          {skills.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="flex flex-wrap justify-end gap-2 sm:col-span-2 lg:col-span-4">
         <button
           type="button"
           onClick={onReset}

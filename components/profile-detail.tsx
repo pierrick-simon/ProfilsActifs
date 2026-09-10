@@ -53,6 +53,7 @@ type UserProfile = {
   video_views: number | null;
   video_validated: boolean | null;
   is_favorited?: boolean;
+  skills?: { id: string; name: string }[];
 };
 
 function formatViews(count: number): string {
@@ -344,6 +345,14 @@ export default function ProfileDetail({ userId }: { userId: string }) {
                       {profile.city}
                     </span>
                   )}
+                  {(profile.skills ?? []).map((skill) => (
+                    <span
+                      key={skill.id}
+                      className="rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-1.5 font-sans text-sm text-texte-secondaire"
+                    >
+                      {skill.name}
+                    </span>
+                  ))}
                 </div>
 
                 {isOwnProfile && (
