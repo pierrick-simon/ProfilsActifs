@@ -11,6 +11,7 @@ import {
   SourceFetchFailedError,
   UnsupportedMediaTypeError,
 } from "@/lib/storage";
+import { hasVideoConsent } from "@/lib/video-consent";
 import { getActiveVideoProvider } from "@/lib/video-provider";
 import { resolveVideoPlayback } from "@/lib/videos";
 
@@ -22,7 +23,8 @@ import { resolveVideoPlayback } from "@/lib/videos";
  *     description: >
  *       Creates a profile video from a remote URL (the server downloads the file
  *       itself) instead of a direct multipart upload. Same size/type constraints as
- *       POST /api/videos; video is not validated by default.
+ *       POST /api/videos; video is not validated by default. Requires the caller
+ *       to have granted RGPD consent beforehand (see POST /api/videos/consent).
  *     requestBody:
  *       required: true
  *       content:
@@ -39,6 +41,8 @@ import { resolveVideoPlayback } from "@/lib/videos";
  *         description: Missing or invalid URL.
  *       401:
  *         description: No session.
+ *       403:
+ *         description: RGPD consent not granted (see POST /api/videos/consent).
  *       413:
  *         description: Video exceeds the 100MB size limit.
  *       415:
@@ -50,6 +54,13 @@ export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!(await hasVideoConsent(session.user.id))) {
+    return NextResponse.json(
+      { error: "Consentement RGPD requis avant l'envoi d'une vidéo" },
+      { status: 403 },
+    );
   }
 
   const body = await request.json().catch(() => null);
