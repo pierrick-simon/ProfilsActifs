@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Profils Actifs",
+  title: "Competences +",
   description: "Développer dans le cadre d'un projet pour le ministère Job et Bonheur",
 };
 
