@@ -38,3 +38,8 @@ docker compose up postgres
 npm install
 npm run dev
 ```
+
+## More documentation:
+- [Catalogue de profils — tri et pagination](docs/catalogue-tri-et-pagination.md)
+- [How to generate fake profiles](docs/GENERATE_PROFILS.md)
+- [How to create questions and answers for the quiz](docs/QUESTIONNAIRE.md)
