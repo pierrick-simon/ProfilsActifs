@@ -334,7 +334,7 @@ function AdminModeration() {
                 Administrateur
               </h1>
               <p className="font-sans text-sm text-texte-tertiaire">
-                Espace d'administration
+                Espace d&apos;administration
               </p>
             </div>
           </div>
