@@ -86,6 +86,68 @@ function payloadFor(question: ApiQuestion, value: AnswerValue): unknown {
   return value;
 }
 
+function fromApi(question: ApiQuestion, raw: unknown): AnswerValue | undefined {
+  if (raw === null || raw === undefined) {
+    return undefined;
+  }
+  switch (question.type) {
+    case "numeric":
+      if (typeof raw === "number" && !Number.isNaN(raw)) {
+        return String(raw);
+      }
+      if (
+        typeof raw === "string" &&
+        raw.trim() !== "" &&
+        !Number.isNaN(Number(raw))
+      ) {
+        return raw;
+      }
+      return undefined;
+    case "true-false":
+      return typeof raw === "boolean" ? raw : undefined;
+    case "multiple-choice":
+      return Array.isArray(raw) && raw.every((item) => typeof item === "string")
+        ? raw
+        : undefined;
+    case "date": {
+      if (typeof raw !== "string" || raw.trim() === "") {
+        return undefined;
+      }
+      const french = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+      if (french) {
+        return `${french[3]}-${french[2]}-${french[1]}`;
+      }
+      return raw;
+    }
+    default:
+      return typeof raw === "string" ? raw : undefined;
+  }
+}
+
+async function loadSavedAnswers(
+  list: ApiQuestion[],
+  version: number,
+): Promise<Record<number, AnswerValue>> {
+  const restored: Record<number, AnswerValue> = {};
+  await Promise.all(
+    list.map(async (item) => {
+      const response = await fetch(
+        `/api/form/answer?formVersion=${version}&questionId=${item.id}`,
+      );
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      const raw = data.response ?? data.answer ?? data.data?.response;
+      const value = fromApi(item, raw);
+      if (value !== undefined && isAnswered(item, value)) {
+        restored[item.id] = value;
+      }
+    }),
+  );
+  return restored;
+}
+
 export default function QuestionsPage() {
   const router = useRouter();
   const { showError } = useToast();
@@ -114,12 +176,20 @@ export default function QuestionsPage() {
               options: { choices: item.options?.choices ?? [] },
             }))
           : [];
+        const version =
+          typeof data.formVersion === "number" ? data.formVersion : null;
+        const restored =
+          version !== null ? await loadSavedAnswers(list, version) : {};
+        const firstOpen = list.findIndex(
+          (item) => !isAnswered(item, restored[item.id]),
+        );
         if (alive) {
           setQuestions(list);
-          setFormVersion(
-            typeof data.formVersion === "number" ? data.formVersion : null,
+          setFormVersion(version);
+          setAnswers(restored);
+          setStep(
+            firstOpen === -1 ? Math.max(0, list.length - 1) : firstOpen,
           );
-          setStep(0);
         }
       } catch {
         if (alive) {
@@ -143,30 +213,23 @@ export default function QuestionsPage() {
   const canContinue =
     Boolean(question && isAnswered(question, currentAnswer)) && !submitting;
 
-  async function submitAnswers() {
-    if (formVersion === null) {
+  async function saveCurrentAnswer() {
+    if (!question || formVersion === null || currentAnswer === undefined) {
       showError("Version du formulaire inconnue.", "Envoi impossible");
       return false;
     }
 
-    for (const item of questions) {
-      const value = answers[item.id];
-      if (value === undefined || !isAnswered(item, value)) {
-        showError("Répondez à toutes les questions avant de terminer.");
-        return false;
-      }
-      const response = await fetch("/api/form/answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          formVersion,
-          questionId: item.id,
-          response: payloadFor(item, value),
-        }),
-      });
-      if (!response.ok) {
-        throw new Error("answer failed");
-      }
+    const response = await fetch("/api/form/answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        formVersion,
+        questionId: question.id,
+        response: payloadFor(question, currentAnswer),
+      }),
+    });
+    if (!response.ok) {
+      throw new Error("answer failed");
     }
     return true;
   }
@@ -175,17 +238,18 @@ export default function QuestionsPage() {
     if (!canContinue) {
       return;
     }
-    if (!isLast) {
-      setStep((current) => current + 1);
-      return;
-    }
 
     setSubmitting(true);
     try {
-      const saved = await submitAnswers();
-      if (saved) {
-        router.push("/");
+      const saved = await saveCurrentAnswer();
+      if (!saved) {
+        return;
       }
+      if (isLast) {
+        router.push("/");
+        return;
+      }
+      setStep((current) => current + 1);
     } catch {
       showError(
         "Impossible d'enregistrer vos réponses.",
