@@ -13,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Competences +",
-  description: "Développer dans le cadre d'un projet pour le ministère Job et Bonheur",
+  title: "Compétences+",
+  description: "Compétences+ est un outil pour aider les candidats à se démarquer et à être contacter plus facilement."
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

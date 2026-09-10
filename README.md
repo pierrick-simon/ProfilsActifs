@@ -1,4 +1,4 @@
-# Survivor - Competences +
+# Survivor - Compétences+
 
 ## How to un locally in production environment
 

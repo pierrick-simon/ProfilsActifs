@@ -8,7 +8,7 @@ export default function AuthTestimonial() {
 
         <div className="flex flex-col gap-7">
           <p className="font-sans text-2xl font-medium leading-snug text-texte-inverse">
-            « Competences + aide les demandeurs d&apos;emploi à se présenter en vidéo et à être repérés par des recruteurs. »
+            « Compétences+ aide les demandeurs d&apos;emploi à se présenter en vidéo et à être repérés par des recruteurs. »
           </p>
         </div>
       </div>

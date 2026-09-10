@@ -314,7 +314,7 @@ async function generateRandomUser(
                             "PENDING" | "READY" | "FAILED",
                         userId: createdUser.id,
                         views: 0,
-                        validated: true,
+                        validated: Math.random() < 0.5,
                     },
                 });
             } finally {
