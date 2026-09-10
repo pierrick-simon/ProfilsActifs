@@ -42,8 +42,13 @@ export const auth = betterAuth({
         required: true,
         input: true,
       },
-      certifcation: {
+      certification: {
         type: "date",
+        required: false,
+        input: true,
+      },
+      activitySector: {
+        type: "string",
         required: false,
         input: true,
       },

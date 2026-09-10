@@ -25,6 +25,18 @@ const GenerationConcurrency = 10;
 const execFileAsync = promisify(execFile);
 
 type NewUserRole = "candidate" | "recruiter" | "admin";
+const ActivitySectors = [
+    "TECHNOLOGY",
+    "FINANCE",
+    "HEALTHCARE",
+    "EDUCATION",
+    "RETAIL",
+    "MANUFACTURING",
+    "CONSULTING",
+    "MEDIA",
+    "GOVERNMENT",
+    "OTHER",
+] as const;
 
 type User = {
     email: string;
@@ -253,6 +265,10 @@ async function generateRandomUser(
             })
             .toISOString()
             .split("T")[0];
+    const userActivitySector =
+        role === "candidate"
+            ? faker.helpers.arrayElement(ActivitySectors)
+            : undefined;
 
     try {
         const {user: createdUser} =
@@ -268,6 +284,8 @@ async function generateRandomUser(
                         acceptedTerms: true,
                         localisation: userLocalisation,
                         dateOfBirth: userDateOfBirth,
+                        activitySector: userActivitySector,
+                        certification: Math.random() > 0.5 ? faker.date.recent() : undefined
                     },
                 },
             });
@@ -313,7 +331,7 @@ async function generateRandomUser(
                         status: initialStatus.status.toUpperCase() as
                             "PENDING" | "READY" | "FAILED",
                         userId: createdUser.id,
-                        views: 0,
+                        views: Math.floor(Math.random() * 100),
                         validated: Math.random() < 0.5,
                     },
                 });
