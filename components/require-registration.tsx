@@ -26,3 +26,30 @@ export default function RequireRegistration({
 
   return <>{children}</>;
 }
+
+export function RequireAdmin({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+  const role = session?.user?.role ?? null;
+
+  useEffect(() => {
+    if (isPending || !session) {
+      return;
+    }
+    if (role !== "admin") {
+      router.replace(
+        role === "recruiter" ? "/" : `/profil/${session.user.id}`,
+      );
+    }
+  }, [isPending, session, role, router]);
+
+  if (isPending || !session || role !== "admin") {
+    return null;
+  }
+
+  return <>{children}</>;
+}

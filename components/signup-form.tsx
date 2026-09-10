@@ -6,10 +6,8 @@ import {
   BriefcaseIcon,
   CalendarIcon,
   CheckIcon,
-  ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
-  GlobeIcon,
   LockIcon,
   MailIcon,
   UserIcon,
@@ -17,7 +15,7 @@ import {
 import AuthUserBadge from "@/components/auth-user-badge";
 import CommuneField from "@/components/commune-field";
 import { authClient } from "@/lib/auth_client";
-import { isAtLeast16, maxBirthDateInput } from "@/lib/age-gate";
+import { isAtLeast16 } from "@/lib/age-gate";
 import { useToast } from "@/components/toast";
 
 
@@ -47,11 +45,11 @@ export default function SignupForm() {
       return;
     }
 
-    const parts = birthDate.split("-").map(Number);
-    const dateOfBirth =
-      parts.length === 3
-        ? new Date(parts[0], parts[1] - 1, parts[2])
-        : new Date(birthDate);
+    const dateOfBirth = parseBirthDate(birthDate);
+    if (!dateOfBirth) {
+      showError("Indiquez une date au format jj/mm/aaaa.");
+      return;
+    }
     if (!isAtLeast16(dateOfBirth)) {
       showError("Vous devez avoir au moins 16 ans pour vous inscrire.");
       return;
@@ -95,13 +93,11 @@ export default function SignupForm() {
       }
     }
 
-    window.location.assign(
-      role === "candidat" ? "/inscription/video" : "/",
-    );
+    window.location.assign("/");
   }
 
   return (
-    <div className="flex h-full flex-col justify-between gap-6 overflow-y-auto p-8">
+    <div className="flex h-full flex-col gap-6 overflow-y-auto p-8">
       <header className="flex items-center justify-between gap-3">
         <span className="flex size-8 items-center justify-center rounded-lg bg-bleu-institutionnel font-sans text-xs font-medium text-texte-inverse">
           PA
@@ -194,13 +190,14 @@ export default function SignupForm() {
               <CalendarIcon className="size-5 shrink-0 text-texte-tertiaire" />
               <input
                 id="naissance"
-                type="date"
+                type="text"
                 required
-                max={maxBirthDateInput()}
+                inputMode="numeric"
+                placeholder="jj/mm/aaaa"
                 value={birthDate}
-                onChange={(event) => setBirthDate(event.target.value)}
+                onChange={(event) => setBirthDate(formatBirthDateInput(event.target.value))}
                 autoComplete="bday"
-                className="flex-1 bg-transparent font-sans text-sm text-texte-principal focus:outline-none [color-scheme:light]"
+                className="flex-1 bg-transparent font-sans text-sm text-texte-principal placeholder:text-texte-tertiaire focus:outline-none"
               />
             </div>
           </div>
@@ -294,18 +291,36 @@ export default function SignupForm() {
           </button>
         </form>
       </div>
-
-      <footer className="flex items-center justify-between">
-        <span className="font-sans text-sm text-texte-secondaire">© 2025 ProfilsActifs</span>
-        <button
-          type="button"
-          className="flex items-center gap-1 font-sans text-sm text-texte-secondaire transition-colors hover:text-texte-principal"
-        >
-          <GlobeIcon className="size-4" />
-          FR
-          <ChevronDownIcon className="size-4" />
-        </button>
-      </footer>
     </div>
   );
+}
+
+function formatBirthDateInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) {
+    return digits;
+  }
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  }
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function parseBirthDate(value: string): Date | null {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value.trim());
+  if (!match) {
+    return null;
+  }
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
 }

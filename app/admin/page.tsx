@@ -15,8 +15,9 @@ import {
 } from "@/components/icons";
 import RejectVideoModal from "@/components/reject-video-modal";
 import UserTable, { type ListedUser } from "@/components/user-table";
+import FormEditor from "@/components/form-editor";
 import BackButton from "@/components/back-button";
-import RequireRegistration from "@/components/require-registration";
+import RequireRegistration, { RequireAdmin } from "@/components/require-registration";
 import { useToast } from "@/components/toast";
 import { authClient } from "@/lib/auth_client";
 
@@ -199,7 +200,9 @@ function toPending(item: VideoItem): PendingVideo {
 export default function AdminPage() {
   return (
     <RequireRegistration>
-      <AdminModeration />
+      <RequireAdmin>
+        <AdminModeration />
+      </RequireAdmin>
     </RequireRegistration>
   );
 }
@@ -212,7 +215,7 @@ function AdminModeration() {
   const [actingId, setActingId] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<PendingVideo | null>(null);
   const [watching, setWatching] = useState<PendingVideo | null>(null);
-  const [view, setView] = useState<"moderation" | "users">("moderation");
+  const [view, setView] = useState<"moderation" | "users" | "form">("moderation");
   const windowBounds = useMemo(() => statWindow(), []);
 
   useEffect(() => {
@@ -373,7 +376,7 @@ function AdminModeration() {
 
       {/* Contenu */}
       <main className="flex flex-1 flex-col bg-fond-neutre/40 p-6 md:p-10">
-        {/* Bascule modération / utilisateurs */}
+        {/* Bascule modération / utilisateurs / questions */}
         <div className="mb-10 flex justify-center">
           <div className="inline-flex rounded-xl border border-bordure-defaut bg-fond-neutre p-1.5 shadow-sm">
             <ViewTab
@@ -386,11 +389,18 @@ function AdminModeration() {
               active={view === "users"}
               onClick={() => setView("users")}
             />
+            <ViewTab
+              label="Questions"
+              active={view === "form"}
+              onClick={() => setView("form")}
+            />
           </div>
         </div>
 
         {view === "users" ? (
           <UserTable users={users} videos={videos} loading={loading} />
+        ) : view === "form" ? (
+          <FormEditor />
         ) : (
           <div className="flex flex-col gap-10">
             {/* Statistiques */}
