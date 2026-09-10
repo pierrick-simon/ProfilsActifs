@@ -278,7 +278,14 @@ export default function SignupForm() {
               {acceptTerms && <CheckIcon className="size-3.5" />}
             </button>
             <span className="font-sans text-sm text-texte-principal">
-              J&apos;accepte les conditions d&apos;utilisation et la politique de confidentialité.
+              J&apos;accepte les conditions d&apos;utilisation et la{" "}
+              <a 
+                href="/cgu.pdf"
+                download
+                className="underline hover:opacity-80 transition-opacity"
+              >
+                politique de confidentialité
+              </a>.
             </span>
           </label>
 
