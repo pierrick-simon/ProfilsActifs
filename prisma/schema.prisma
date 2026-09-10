@@ -202,11 +202,6 @@ model video {
   @@index([createdAt(sort: Desc), id])
 }
 
-/// RGPD: tracks, per user, whether explicit consent to process (store, encode,
-/// serve) a video of themselves was given — a distinct, purpose-specific and
-/// revocable basis, separate from the general `user.acceptedTerms`. Video
-/// upload endpoints must check `granted` before accepting a file; withdrawing
-/// consent (DELETE /api/videos/consent) also erases the videos it covered.
 model videoConsent {
   id        String    @id
   userId    String    @unique
