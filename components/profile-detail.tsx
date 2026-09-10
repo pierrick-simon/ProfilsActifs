@@ -261,6 +261,16 @@ export default function ProfileDetail({ userId }: { userId: string }) {
             />
           </div>
         )}
+        {isOwnProfile && session?.user.role === "admin" && (
+          <div className="w-full px-4 py-4 md:px-8">
+            <Link
+              href="/admin"
+              className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 font-sans text-sm font-medium transition-colors sm:w-auto border-bordure-defaut bg-fond-page text-texte-secondaire hover:bg-fond-neutre hover:text-bleu-institutionnel`}
+            >
+              Page Admin
+            </Link>
+          </div>
+        )}
       </header>
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 p-4 md:flex-row md:p-8">

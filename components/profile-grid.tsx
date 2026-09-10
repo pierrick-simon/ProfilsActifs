@@ -356,6 +356,14 @@ export default function ProfileGrid() {
                   </span>
                 ) : null}
               </button>
+              {session?.user.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 font-sans text-sm font-medium transition-colors sm:w-auto border-bordure-defaut bg-fond-page text-texte-secondaire hover:bg-fond-neutre hover:text-bleu-institutionnel`}
+                >
+                  Page Admin
+                </Link>
+              )}
             </div>
           </div>
 
