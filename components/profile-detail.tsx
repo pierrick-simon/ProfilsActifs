@@ -253,12 +253,14 @@ export default function ProfileDetail({ userId }: { userId: string }) {
   return (
     <div className="flex w-full flex-1 flex-col bg-fond-neutre">
       <header className="sticky top-0 z-40 border-b border-bordure-defaut bg-fond-page shadow-sm">
-        <div className="w-full px-4 py-4 md:px-8">
-          <BackButton
-            href="/"
-            label={isOwnProfile ? "Retour" : "Retour aux profils"}
-          />
-        </div>
+        {!isOwnProfile && (
+          <div className="w-full px-4 py-4 md:px-8">
+            <BackButton
+              href="/"
+              label="Retour aux profils"
+            />
+          </div>
+        )}
       </header>
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 p-4 md:flex-row md:p-8">

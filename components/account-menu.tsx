@@ -80,8 +80,13 @@ export default function AccountMenu() {
 
   async function handleSignOut() {
     setLoading(true);
-    await authClient.signOut();
-    router.push("/connexion");
+    try {
+      await authClient.signOut();
+      router.push("/connexion");
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
   }
 
   async function handleExportData() {
@@ -138,6 +143,7 @@ export default function AccountMenu() {
     } catch (err) {
       console.error(err);
       setLoading(false);
+      setOpen(false);
     }
   }
 
