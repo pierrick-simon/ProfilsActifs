@@ -130,7 +130,7 @@ export default function MessagesContacts({
                       {name}
                     </span>
                     <span className="truncate font-sans text-xs text-texte-tertiaire">
-                      Competences +
+                      Compétences+
                     </span>
                   </div>
                   <span className="shrink-0 font-sans text-xs text-texte-tertiaire">

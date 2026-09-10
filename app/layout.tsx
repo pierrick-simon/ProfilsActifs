@@ -14,7 +14,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Compétences+",
-  description: "Compétences + est un outil pour aider les candidats à se démarquer et à être contacter plus facilement."
+  description: "Compétences+ est un outil pour aider les candidats à se démarquer et à être contacter plus facilement."
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

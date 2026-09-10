@@ -182,7 +182,7 @@
     },
     {
       "id": 16,
-      "question": "Quel est le principal objectif d'un badge de certification sur un profil Competences + ?",
+      "question": "Quel est le principal objectif d'un badge de certification sur un profil Compétences+ ?",
       "type": "single-choice",
       "weight": 1,
       "options": {
@@ -215,7 +215,7 @@
     },
     {
       "id": 19,
-      "question": "Sur combien de critères principaux un recruteur peut-il filtrer les profils sur Competences + (compétences, secteur, localisation, statut de certification) ?",
+      "question": "Sur combien de critères principaux un recruteur peut-il filtrer les profils sur Compétences+ (compétences, secteur, localisation, statut de certification) ?",
       "type": "numeric",
       "weight": 1,
       "options": {

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   CheckIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@/components/icons";
@@ -106,7 +105,7 @@ function ProductPreview() {
             <span className="size-2.5 rounded-full bg-bordure-forte/50" />
             <span className="size-2.5 rounded-full bg-bordure-forte/50" />
             <span className="ml-3 rounded-full bg-fond-neutre px-3 py-1 font-sans text-xs text-texte-tertiaire">
-              competences+.fr
+              compétences+.fr
             </span>
           </div>
           <div className="grid gap-4 p-4 sm:grid-cols-[3fr_2fr]">
