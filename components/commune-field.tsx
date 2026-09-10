@@ -9,11 +9,17 @@ export default function CommuneField({
   picked,
   onChange,
   required = false,
+  hideLabel = false,
+  matchBy = "label",
+  inputId = "adresse",
 }: {
   value: string;
   picked: boolean;
   onChange: (value: string, picked: boolean) => void;
   required?: boolean;
+  hideLabel?: boolean;
+  matchBy?: "label" | "nom";
+  inputId?: string;
 }) {
   const listId = useId();
   const [suggestions, setSuggestions] = useState<CommuneSuggestion[]>([]);
@@ -47,20 +53,24 @@ export default function CommuneField({
   }, [value, picked]);
 
   function pick(suggestion: CommuneSuggestion) {
-    onChange(suggestion.label, true);
+    onChange(matchBy === "nom" ? suggestion.nom : suggestion.label, true);
     setSuggestions([]);
     setOpen(false);
   }
 
   return (
     <div className="relative flex flex-col gap-1">
-      <label htmlFor="adresse" className="font-sans text-sm font-medium text-texte-principal">
-        Localisation <span className="text-bleu-institutionnel">*</span>
-      </label>
-      <div className="flex items-center gap-2 rounded-lg border border-bordure-defaut bg-fond-page px-3 py-2.5 shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] focus-within:border-bleu-institutionnel focus-within:ring-2 focus-within:ring-fond-bleu-clair">
-        <MapPinIcon className="size-5 shrink-0 text-texte-tertiaire" />
+      {!hideLabel && (
+        <label htmlFor={inputId} className="font-sans text-sm font-medium text-texte-principal">
+          Localisation <span className="text-bleu-institutionnel">*</span>
+        </label>
+      )}
+      <div className={`flex items-center gap-2 rounded-lg border border-bordure-defaut bg-fond-page px-3 shadow-[0_1px_2px_0_rgba(10,13,20,0.03)] focus-within:border-bleu-institutionnel focus-within:ring-2 focus-within:ring-fond-bleu-clair ${hideLabel ? "py-2" : "py-2.5"}`}>
+        {hideLabel ? null : (
+          <MapPinIcon className="size-5 shrink-0 text-texte-tertiaire" />
+        )}
         <input
-          id="adresse"
+          id={inputId}
           type="text"
           required={required}
           value={value}
@@ -88,7 +98,7 @@ export default function CommuneField({
         <ul
           id={listId}
           role="listbox"
-          className="absolute top-full z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-bordure-defaut bg-fond-page py-1 shadow-[0px_16px_32px_-12px_rgba(14,18,27,0.12)]"
+          className="absolute top-full z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-bordure-defaut bg-fond-page py-1 shadow-[0px_16px_32px_-12px_rgba(14,18,27,0.12)]"
         >
           {suggestions.map((suggestion) => (
             <li key={`${suggestion.code}-${suggestion.codePostal}`}>

@@ -15,6 +15,7 @@ import {
 import { useViewerRole } from "@/hooks/use-role";
 import { useToast } from "@/components/toast";
 import { authClient } from "@/lib/auth_client";
+import CommuneField from "@/components/commune-field";
 
 const PAGE_SIZE = 20;
 
@@ -429,8 +430,15 @@ function CatalogFilters({
   onApply: () => void;
   onReset: () => void;
 }) {
+  const [locationPicked, setLocationPicked] = useState(false);
   const fieldClass =
     "w-full rounded-lg border border-bordure-defaut bg-fond-page px-3 py-2 font-sans text-sm text-texte-principal focus:border-bleu-institutionnel focus:outline-none focus:ring-2 focus:ring-fond-bleu-clair";
+
+  useEffect(() => {
+    if (!location) {
+      setLocationPicked(false);
+    }
+  }, [location]);
 
   return (
     <form
@@ -458,19 +466,22 @@ function CatalogFilters({
         </select>
       </label>
 
-      <label className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         <span className="font-sans text-xs font-semibold uppercase tracking-wider text-texte-tertiaire">
           Localisation
         </span>
-        <input
-          type="text"
+        <CommuneField
           value={location}
-          onChange={(event) => onLocation(event.target.value)}
-          placeholder="Ville ou code postal"
-          autoComplete="off"
-          className={fieldClass}
+          picked={locationPicked}
+          hideLabel
+          matchBy="nom"
+          inputId="filtre-localisation"
+          onChange={(value, picked) => {
+            onLocation(value);
+            setLocationPicked(picked);
+          }}
         />
-      </label>
+      </div>
 
       <label className="flex flex-col gap-1">
         <span className="font-sans text-xs font-semibold uppercase tracking-wider text-texte-tertiaire">
