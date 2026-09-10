@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
+/**
+ * @swagger
+ * /api/user/show-profile:
+ *   patch:
+ *     tags: [Users]
+ *     description: >
+ *       Toggles whether the logged-in candidate's profile is visible in the
+ *       recruiter catalog (GET /api/videos, GET /api/user/{id}). Recruiters have
+ *       no catalog profile of their own, so they cannot call this.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [show_profile]
+ *             properties:
+ *               show_profile: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Visibility updated.
+ *       400:
+ *         description: show_profile missing/not a boolean, or caller is a recruiter.
+ *       401:
+ *         description: No session.
+ */
 export async function PATCH(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {
