@@ -9,6 +9,36 @@ async function requireSessionUser(request: NextRequest) {
   return session?.user ?? null;
 }
 
+/**
+ * @swagger
+ * /api/messages/{id}:
+ *   get:
+ *     tags: [Messages]
+ *     description: >
+ *       Paginated history (composite date+id cursor, most recent first) of the
+ *       conversation between the logged-in user and profile {id}.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: Id of the other participant in the conversation.
+ *       - in: query
+ *         name: cursor
+ *         schema: { type: string }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 30, maximum: 100 }
+ *     responses:
+ *       200:
+ *         description: List of messages, next cursor, and has_more flag.
+ *       400:
+ *         description: Invalid pagination cursor.
+ *       401:
+ *         description: No session.
+ *       404:
+ *         description: Recipient not found.
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -108,6 +138,37 @@ export async function GET(
   return NextResponse.json(responseBody, { status: 200 });
 }
 
+/**
+ * @swagger
+ * /api/messages/{id}:
+ *   post:
+ *     tags: [Messages]
+ *     description: Sends a text message to profile {id}.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: Id of the recipient.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content]
+ *             properties:
+ *               content: { type: string, maxLength: 4000 }
+ *     responses:
+ *       201:
+ *         description: Message sent.
+ *       400:
+ *         description: Missing or empty content, content too long, or recipient equals sender.
+ *       401:
+ *         description: No session.
+ *       404:
+ *         description: Recipient not found.
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

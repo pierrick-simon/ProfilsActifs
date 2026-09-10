@@ -11,6 +11,36 @@ import {
   areAllAnswersCorrect,
 } from "@/lib/form";
 
+/**
+ * @swagger
+ * /api/form/answer:
+ *   post:
+ *     tags: [Form]
+ *     description: >
+ *       Records a user's answer to a certification form question. When all
+ *       questions of a version have been answered correctly, the profile is
+ *       automatically marked certified.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [formVersion, questionId, response]
+ *             properties:
+ *               formVersion: { type: integer }
+ *               questionId: { type: string }
+ *               response: {}
+ *     responses:
+ *       200:
+ *         description: Answer recorded, with completion and certification status.
+ *       400:
+ *         description: Invalid request body (missing version/question/response, or response does not match the expected format).
+ *       401:
+ *         description: No session.
+ *       404:
+ *         description: Form version or question not found.
+ */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {
@@ -129,6 +159,30 @@ export async function POST(request: NextRequest) {
   );
 }
 
+/**
+ * @swagger
+ * /api/form/answer:
+ *   get:
+ *     tags: [Form]
+ *     description: Retrieves the answer already recorded by the logged-in user for a given question (null if not answered yet).
+ *     parameters:
+ *       - in: query
+ *         name: formVersion
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: questionId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: The existing answer, or null if none.
+ *       400:
+ *         description: Missing questionId or invalid formVersion.
+ *       401:
+ *         description: No session.
+ *       404:
+ *         description: Form version or question not found.
+ */
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {

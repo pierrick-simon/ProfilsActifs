@@ -8,6 +8,18 @@ async function requireSessionUser(request: NextRequest) {
   return session?.user ?? null;
 }
 
+/**
+ * @swagger
+ * /api/user/skill:
+ *   get:
+ *     tags: [Skills]
+ *     description: Lists the skills set by the logged-in user, in the order they were added.
+ *     responses:
+ *       200:
+ *         description: List of the profile's skills.
+ *       401:
+ *         description: No session.
+ */
 export async function GET(request: NextRequest) {
   const user = await requireSessionUser(request);
   if (!user) {
@@ -35,6 +47,33 @@ export async function GET(request: NextRequest) {
   );
 }
 
+/**
+ * @swagger
+ * /api/user/skill:
+ *   patch:
+ *     tags: [Skills]
+ *     description: >
+ *       Attaches an existing skill to the logged-in user's profile (idempotent —
+ *       replaying with the same skill_id does not create a duplicate).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [skill_id]
+ *             properties:
+ *               skill_id: { type: string }
+ *     responses:
+ *       200:
+ *         description: Skill attached to the profile.
+ *       400:
+ *         description: Missing skill_id.
+ *       401:
+ *         description: No session.
+ *       404:
+ *         description: Skill not found.
+ */
 export async function PATCH(request: NextRequest) {
   const user = await requireSessionUser(request);
   if (!user) {
@@ -75,6 +114,29 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json({ id: skill.id, name: skill.name }, { status: 200 });
 }
 
+/**
+ * @swagger
+ * /api/user/skill:
+ *   delete:
+ *     tags: [Skills]
+ *     description: Removes a skill from the logged-in user's profile.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [skill_id]
+ *             properties:
+ *               skill_id: { type: string }
+ *     responses:
+ *       200:
+ *         description: Skill removed (or already absent).
+ *       400:
+ *         description: Missing skill_id.
+ *       401:
+ *         description: No session.
+ */
 export async function DELETE(request: NextRequest) {
   const user = await requireSessionUser(request);
   if (!user) {

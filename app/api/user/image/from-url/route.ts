@@ -12,6 +12,38 @@ import {
   UnsupportedMediaTypeError,
 } from "@/lib/storage";
 
+/**
+ * @swagger
+ * /api/user/image/from-url:
+ *   post:
+ *     tags: [Users]
+ *     description: >
+ *       Sets the logged-in user's avatar from a remote URL (the server downloads
+ *       the image itself). The previous image, if any, is deleted from disk after
+ *       replacement.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [url]
+ *             properties:
+ *               url: { type: string }
+ *     responses:
+ *       200:
+ *         description: Avatar updated.
+ *       400:
+ *         description: Missing or invalid URL.
+ *       401:
+ *         description: No session.
+ *       413:
+ *         description: Image exceeds the 5MB size limit.
+ *       415:
+ *         description: Unsupported image type.
+ *       502:
+ *         description: Failed to download from the provided URL.
+ */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {

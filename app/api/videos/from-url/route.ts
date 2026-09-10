@@ -14,6 +14,38 @@ import {
 import { getActiveVideoProvider } from "@/lib/video-provider";
 import { resolveVideoPlayback } from "@/lib/videos";
 
+/**
+ * @swagger
+ * /api/videos/from-url:
+ *   post:
+ *     tags: [Videos]
+ *     description: >
+ *       Creates a profile video from a remote URL (the server downloads the file
+ *       itself) instead of a direct multipart upload. Same size/type constraints as
+ *       POST /api/videos; video is not validated by default.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [url]
+ *             properties:
+ *               url: { type: string }
+ *     responses:
+ *       201:
+ *         description: Video created (pending processing and moderation).
+ *       400:
+ *         description: Missing or invalid URL.
+ *       401:
+ *         description: No session.
+ *       413:
+ *         description: Video exceeds the 100MB size limit.
+ *       415:
+ *         description: Remote content type not recognized as an allowed video.
+ *       502:
+ *         description: Failed to download from the provided URL.
+ */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {

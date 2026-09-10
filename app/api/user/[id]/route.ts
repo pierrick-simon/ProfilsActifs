@@ -3,6 +3,29 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { resolveVideoPlayback } from "@/lib/videos";
 
+/**
+ * @swagger
+ * /api/user/{id}:
+ *   get:
+ *     tags: [Users]
+ *     description: >
+ *       Detailed profile sheet: identity, sector, certification, skills, latest
+ *       video and its playback state. A recruiter profile is only visible to
+ *       itself (returns just its favorites); otherwise 404, so its existence is
+ *       not confirmed to an unauthorized visitor.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Profile detail (reduced shape for a recruiter profile viewed by itself).
+ *       401:
+ *         description: No session.
+ *       404:
+ *         description: Profile not found, or recruiter profile viewed by someone else.
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

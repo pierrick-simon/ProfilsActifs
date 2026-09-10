@@ -9,6 +9,35 @@ import {
   saveUploadedFile,
 } from "@/lib/storage";
 
+/**
+ * @swagger
+ * /api/user/image:
+ *   post:
+ *     tags: [Users]
+ *     description: >
+ *       Direct upload (multipart/form-data, "file" field) of a new avatar for the
+ *       logged-in user. The previous image, if any, is deleted from disk after
+ *       replacement.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: Avatar updated.
+ *       400:
+ *         description: Missing file.
+ *       401:
+ *         description: No session.
+ *       413:
+ *         description: Image exceeds the 5MB size limit.
+ *       415:
+ *         description: Unsupported image type.
+ */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {

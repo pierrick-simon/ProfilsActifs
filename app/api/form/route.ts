@@ -4,6 +4,24 @@ import {readFile} from "fs/promises";
 import {getFormFileName, getFormVersionFromFileName, getMostRecentFile, isFormValid, saveNewForm} from "@/lib/form";
 import {auth} from "@/lib/auth";
 
+/**
+ * @swagger
+ * /api/form:
+ *   get:
+ *     tags: [Form]
+ *     description: >
+ *       Returns the most recent version of the certification form (questions and
+ *       metadata), stored as a versioned file on disk.
+ *     responses:
+ *       200:
+ *         description: The form, with its version number.
+ *       404:
+ *         description: No form file found.
+ *       400:
+ *         description: The found form does not match the expected schema.
+ *       500:
+ *         description: Form file unreadable (invalid JSON).
+ */
 export async function GET(
     request: NextRequest
 ) {
@@ -31,6 +49,28 @@ export async function GET(
     return NextResponse.json({ ...form, formVersion });
 }
 
+/**
+ * @swagger
+ * /api/form:
+ *   post:
+ *     tags: [Form]
+ *     description: >
+ *       Publishes a new version of the certification form. Restricted to admins;
+ *       the form is validated against its schema before being saved as a new
+ *       versioned file.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { type: object }
+ *     responses:
+ *       200:
+ *         description: Form accepted and saved.
+ *       400:
+ *         description: The submitted form does not match the expected schema.
+ *       403:
+ *         description: Caller is not an admin.
+ */
 export async function POST(
     request: NextRequest
 ) {
