@@ -26,7 +26,6 @@ type PlatformStats = {
   activeProfiles: number;
   certificationRate: number;
   interactions: {
-    likes: number;
     favorites: number;
     messages: number;
     total: number;
@@ -168,7 +167,7 @@ async function fetchStats(): Promise<PlatformStats> {
   return {
     activeProfiles: asCount(data.active_profiles),
     certificationRate: Number.isFinite(rate) ? rate : 0,
-    interactions: { likes, favorites, messages, total },
+    interactions: { favorites, messages, total },
   };
 }
 
@@ -532,11 +531,6 @@ function DashboardView({
           <StatCell
             label="Total"
             value={loading ? "—" : formatCount(interactions?.total ?? 0)}
-          />
-          <StatCell
-            label="J'aime"
-            value={loading ? "—" : formatCount(interactions?.likes ?? 0)}
-            icon={<HeartIcon className="size-5 text-bleu-institutionnel opacity-30" />}
           />
           <StatCell
             label="Favoris"

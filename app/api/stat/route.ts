@@ -10,7 +10,7 @@ import { auth } from "@/lib/auth";
  *     description: >
  *       Aggregate platform statistics for the admin dashboard: active (non-recruiter,
  *       non-banned) profile count, certification rate, and interaction totals
- *       (likes, favorites, messages). Restricted to admins; these numbers are
+ *       (favorites, messages). Restricted to admins; these numbers are
  *       reporting only and are never used to sort or filter the recruiter catalog.
  *     responses:
  *       200:
@@ -34,13 +34,12 @@ export async function GET(request: NextRequest) {
     OR: [{ banned: false }, { banned: null }],
   };
 
-  const [activeProfiles, certifiedProfiles, likeCount, favoryCount, messageCount] =
+  const [activeProfiles, certifiedProfiles, favoryCount, messageCount] =
     await Promise.all([
       prisma.user.count({ where: activeProfileWhere }),
       prisma.user.count({
         where: { ...activeProfileWhere, certification: { not: null } },
       }),
-      prisma.like.count(),
       prisma.favory.count(),
       prisma.message.count(),
     ]);
@@ -53,10 +52,9 @@ export async function GET(request: NextRequest) {
       active_profiles: activeProfiles,
       certification_rate: Math.round(certificationRate * 10000) / 10000,
       interactions: {
-        likes: likeCount,
         favorites: favoryCount,
         messages: messageCount,
-        total: likeCount + favoryCount + messageCount,
+        total: favoryCount + messageCount,
       },
     },
     { status: 200 },
