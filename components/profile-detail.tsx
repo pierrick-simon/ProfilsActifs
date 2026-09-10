@@ -84,6 +84,7 @@ export default function ProfileDetail({ userId }: { userId: string }) {
   const [showProfile, setShowProfile] = useState(true);
   const [askQuestionnaire, setAskQuestionnaire] = useState(false);
   const viewCounted = useRef(false);
+  const [withdrawingConsent, setWithdrawingConsent] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -207,6 +208,35 @@ export default function ProfileDetail({ userId }: { userId: string }) {
     } finally {
       setLoading(false);
       setShowProfile(!showProfile);
+    }
+  }
+
+  async function handleWithdrawVideoConsent() {
+    if (withdrawingConsent) {
+      return;
+    }
+    const confirmed = window.confirm(
+      "Retirer votre consentement supprimera définitivement votre vidéo. Continuer ?",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setWithdrawingConsent(true);
+    try {
+      const res = await fetch("/api/videos/consent", { method: "DELETE" });
+      if (!res.ok) {
+        throw new Error("Failed to withdraw consent");
+      }
+      setProfile((current) =>
+        current
+          ? { ...current, video_url: null, video_status: null, video_validated: null }
+          : current,
+      );
+    } catch {
+      showError("Impossible de retirer le consentement.", "Consentement RGPD");
+    } finally {
+      setWithdrawingConsent(false);
     }
   }
 
@@ -356,6 +386,22 @@ export default function ProfileDetail({ userId }: { userId: string }) {
                         {showProfile ? "*Le profile est disponible dans le catalogue." : "*Le profile n'est pas disponible dans le catalogue."}
                       </span>
                     </div>
+
+                    {profile.video_url && (
+                      <div className="mb-6 flex flex-col gap-1 rounded-lg border border-bordure-defaut bg-fond-neutre px-3 py-2.5">
+                        <button
+                          type="button"
+                          onClick={handleWithdrawVideoConsent}
+                          disabled={withdrawingConsent}
+                          className="mb-3 flex w-full items-center justify-center rounded-lg border border-bordure-defaut bg-fond-page px-4 py-2.5 font-sans text-sm font-medium text-texte-secondaire transition-colors hover:bg-fond-neutre disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Revenir sur mes droits
+                        </button>
+                        <span className="font-sans text-sm font-medium text-texte-principal">
+                          *Retire votre consentement RGPD et supprime définitivement votre vidéo.
+                        </span>
+                      </div>
+                    )}
                   </>
                 )}
 
