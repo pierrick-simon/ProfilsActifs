@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -11,7 +11,6 @@ import {
   InfoIcon,
   MailIcon,
   MapPinIcon,
-  ShareIcon,
   ShieldCheckIcon,
 } from "@/components/icons";
 import BackButton from "@/components/back-button";
@@ -50,6 +49,7 @@ type UserProfile = {
   favory_today?: number;
   video_url: string | null;
   video_status: string | null;
+  video_id: string | null;
   video_views: number | null;
   video_validated: boolean | null;
   is_favorited?: boolean;
@@ -73,7 +73,7 @@ function formatDate(iso: string): string {
 export default function ProfileDetail({ userId }: { userId: string }) {
   const { isRecruiter, isCandidate } = useViewerRole();
   const { showError } = useToast();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const viewerId = session?.user?.id ?? null;
   const isOwnProfile = viewerId === userId;
 
@@ -83,6 +83,7 @@ export default function ProfileDetail({ userId }: { userId: string }) {
   const [favoriting, setFavoriting] = useState(false);
   const [showProfile, setShowProfile] = useState(true);
   const [askQuestionnaire, setAskQuestionnaire] = useState(false);
+  const viewCounted = useRef(false);
 
   useEffect(() => {
     let alive = true;
@@ -131,6 +132,24 @@ export default function ProfileDetail({ userId }: { userId: string }) {
     setAskQuestionnaire(true);
   }, [isCandidate, isOwnProfile, profile, userId]);
 
+  useEffect(() => {
+    viewCounted.current = false;
+  }, [userId, profile?.video_id]);
+
+  useEffect(() => {
+    if (
+      isPending ||
+      isOwnProfile ||
+      viewCounted.current ||
+      !profile?.video_id ||
+      !profile.video_url
+    ) {
+      return;
+    }
+    viewCounted.current = true;
+    void fetch(`/api/videos/${profile.video_id}/view`, { method: "POST" });
+  }, [isPending, isOwnProfile, profile?.video_id, profile?.video_url]);
+
   function dismissQuestionnairePrompt() {
     try {
       sessionStorage.setItem(`questionnaire-prompt-${userId}`, "1");
@@ -138,14 +157,6 @@ export default function ProfileDetail({ userId }: { userId: string }) {
       // ignore
     }
     setAskQuestionnaire(false);
-  }
-
-  async function handleShare() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-    } catch {
-      showError("Impossible de copier le lien.", "Partage échoué");
-    }
   }
 
   async function toggleFavorite() {
@@ -240,22 +251,14 @@ export default function ProfileDetail({ userId }: { userId: string }) {
                   </div>
                 )}
               </div>
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-4 font-sans text-sm text-texte-tertiaire">
+              {isOwnProfile && (
+                <div className="mt-4 flex items-center font-sans text-sm text-texte-tertiaire">
                   <span className="flex items-center gap-1">
                     <EyeIcon className="size-4" />{" "}
                     {formatViews(profile.video_views ?? 0)} vues
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  title="Partager"
-                  className="rounded-lg p-2 text-texte-tertiaire transition-colors hover:bg-fond-bleu-clair hover:text-bleu-institutionnel"
-                >
-                  <ShareIcon className="size-5" />
-                </button>
-              </div>
+              )}
             </div>
 
             <div className="flex w-full flex-col gap-6 lg:w-1/3">

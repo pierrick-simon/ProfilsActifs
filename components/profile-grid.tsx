@@ -457,6 +457,8 @@ function CatalogFilters({
 
 export function ProfileCard({ video }: { video: ProfileVideo }) {
   const previewRef = useRef<HTMLVideoElement>(null);
+  const { data: session } = authClient.useSession();
+  const showViews = session?.user?.id === video.userId;
   const [previewing, setPreviewing] = useState(false);
 
   function startPreview() {
@@ -532,9 +534,11 @@ export function ProfileCard({ video }: { video: ProfileVideo }) {
               </span>
             )}
           </h3>
-          <span className="flex items-center gap-1 rounded-md border border-white/10 bg-black/40 px-2 py-1 font-sans text-xs font-medium text-texte-inverse backdrop-blur-sm">
-            <EyeIcon className="size-3.5" /> {formatViews(video.views)}
-          </span>
+          {showViews && (
+            <span className="flex items-center gap-1 rounded-md border border-white/10 bg-black/40 px-2 py-1 font-sans text-xs font-medium text-texte-inverse backdrop-blur-sm">
+              <EyeIcon className="size-3.5" /> {formatViews(video.views)}
+            </span>
+          )}
         </div>
         {video.role && (
           <p className="font-sans text-sm font-medium text-white/80">
