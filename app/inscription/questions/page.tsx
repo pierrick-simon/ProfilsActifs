@@ -216,7 +216,7 @@ export default function QuestionsPage() {
 
   function goBack() {
     if (step === 0) {
-      router.push("/");
+      router.push("/inscription/profil");
       return;
     }
     setStep((current) => current - 1);
