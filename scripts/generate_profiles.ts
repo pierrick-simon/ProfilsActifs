@@ -242,9 +242,7 @@ async function generateRandomUser(
     };
 
     const userLocalisation =
-        faker.location.city() +
-        ", " +
-        faker.location.country();
+        faker.location.city();
 
     const userDateOfBirth =
         faker.date
